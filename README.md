@@ -52,7 +52,7 @@ frontend/
 
 The frontend currently uses this API base URL:
 
-- `http://localhost:8000/api`
+- `https://shopifymanagerbackend-production.up.railway.app/api`
 
 Defined in `src/api/config.js`.
 

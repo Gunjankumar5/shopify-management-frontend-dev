@@ -3,40 +3,197 @@ import { createPortal } from "react-dom";
 import CollectionsPage from "./pages/CollectionsPage";
 import InventoryPage from "./pages/InventoryPage";
 
-const API = "http://localhost:8000/api";
+const API = "https://shopifymanagerbackend-production.up.railway.app/api";
 
-const FontLoader = () => (
+// ===== STYLES WITH CSS VARIABLES =====
+const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #0d0d14;
+      --bg-card: #13131a;
+      --bg-input: #13131a;
+      --border-color: #1e1e2e;
+      --border-light: #2a2a3d;
+      --text-primary: #e8e8f0;
+      --text-secondary: #888;
+      --text-muted: #555;
+      --accent: #6366f1;
+      --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
+      --transition: all 0.2s ease;
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #root { height: 100%; }
-    body { font-family: 'DM Sans', sans-serif; background: #0a0a0f; color: #e8e8f0; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #13131a; }
-    ::-webkit-scrollbar-thumb { background: #2a2a3d; border-radius: 3px; }
-    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    ::-webkit-scrollbar-thumb { background: #2a2a3d; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3d3d5c; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .fade-up { animation: fadeUp 0.35s ease forwards; }
-    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(99,102,241,0.15); }
-    .btn-primary { background: linear-gradient(135deg,#6366f1,#8b5cf6); border:none; cursor:pointer; transition: all 0.2s; color:#fff; }
-    .btn-primary:hover:not(:disabled) { opacity:0.9; transform:translateY(-1px); box-shadow:0 4px 20px rgba(99,102,241,0.4); }
-    .btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
-    .btn-ghost { background:#1e1e2e; border:1px solid #2a2a3d; cursor:pointer; transition:all 0.2s; color:#888; }
-    .btn-ghost:hover { background:#252538; border-color:#6366f1; color:#e8e8f0; }
-    .field-input { background:#13131a; border:1px solid #2a2a3d; color:#e8e8f0; outline:none; transition:border-color 0.2s; font-family:inherit; width:100%; }
-    .field-input:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.1); }
-    .chk { appearance:none; width:18px; height:18px; min-width:18px; border:2px solid #3d3d5c; border-radius:5px; cursor:pointer; background:#13131a; position:relative; transition:all 0.15s; }
-    .chk:checked { background:#6366f1; border-color:#6366f1; }
-    .chk:checked::after { content:'✓'; position:absolute; color:#fff; font-size:11px; top:50%; left:50%; transform:translate(-50%,-50%); }
-    .skeleton { background:linear-gradient(90deg,#1a1a2e 25%,#252540 50%,#1a1a2e 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:10px; }
-    .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); overflow-y:scroll; padding:40px 20px 80px; display:block; }
-.modal-box { margin-left:auto; margin-right:auto; }
-    .modal-box { background:#13131a; border:1px solid #2a2a3d; border-radius:20px; width:100%; box-shadow:0 24px 80px rgba(0,0,0,0.7); flex-shrink:0; }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .fade-up { animation: fadeUp 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+    .card-hover {
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent) !important;
+    }
+
+    .btn {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) {
+      opacity: 0.9;
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      color: var(--text-secondary);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #252538;
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--danger);
+    }
+
+    .field-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+      width: 100%;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+    .field-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    .field-input::placeholder { color: #3d3d5c; }
+
+    .chk {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      border: 2px solid var(--border-light);
+      border-radius: 6px;
+      cursor: pointer;
+      background: var(--bg-input);
+      position: relative;
+      transition: var(--transition);
+    }
+    .chk:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .chk:checked::after {
+      content: '✓';
+      position: absolute;
+      color: white;
+      font-size: 13px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .chk:focus-visible { outline: 2px solid var(--accent); }
+
+    .skeleton {
+      background: linear-gradient(90deg, #1a1a2e 25%, #252540 50%, #1a1a2e 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite;
+      border-radius: 12px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      width: 100%;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      animation: fadeUp 0.3s ease;
+    }
+    .modal-box::-webkit-scrollbar { width: 6px; }
   `}</style>
 );
 
+// ===== API HELPER (unchanged) =====
 const api = {
   get: (p) => fetch(`${API}${p}`).then((r) => r.json()),
   post: (p, b) =>
@@ -57,6 +214,7 @@ const api = {
     fetch(`${API}${p}`, { method: "POST", body: fd }).then((r) => r.json()),
 };
 
+// ===== ICONS (unchanged) =====
 const ICONS = {
   products: "M20 7l-8-4-8 4m16 0v10l-8 4-8-4V7m8 4v10M12 11L4 7",
   upload: "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12",
@@ -107,19 +265,20 @@ const Spin = ({ size = 18 }) => (
     <circle cx="12" cy="12" r="10" stroke="#3d3d5c" strokeWidth="3" />
     <path
       d="M12 2a10 10 0 0110 10"
-      stroke="#6366f1"
+      stroke="var(--accent)"
       strokeWidth="3"
       strokeLinecap="round"
     />
   </svg>
 );
 
+// ===== TOAST SYSTEM =====
 const useToast = () => {
   const [toasts, set] = useState([]);
   const add = (msg, type = "success") => {
     const id = Date.now();
     set((p) => [...p, { id, msg, type }]);
-    setTimeout(() => set((p) => p.filter((t) => t.id !== id)), 4000);
+    setTimeout(() => set((p) => p.filter((t) => t.id !== id)), 4500);
   };
   return {
     toasts,
@@ -137,39 +296,47 @@ const Toasts = ({ toasts, remove }) => (
       zIndex: 99999,
       display: "flex",
       flexDirection: "column",
-      gap: 8,
+      gap: 10,
       pointerEvents: "none",
     }}
   >
     {toasts.map((t) => (
       <div
         key={t.id}
-        className="fade-up"
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 10,
-          padding: "12px 16px",
+          gap: 12,
+          padding: "14px 18px",
           background:
             t.type === "success"
               ? "#064e3b"
               : t.type === "error"
                 ? "#7f1d1d"
                 : "#1e3a5f",
-          border: `1px solid ${t.type === "success" ? "#10b981" : t.type === "error" ? "#ef4444" : "#3b82f6"}`,
+          borderLeft: `4px solid ${
+            t.type === "success"
+              ? "var(--success)"
+              : t.type === "error"
+                ? "var(--danger)"
+                : "var(--info)"
+          }`,
           borderRadius: 12,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-          minWidth: 280,
-          maxWidth: 380,
+          boxShadow: "var(--shadow-lg)",
+          minWidth: 300,
+          maxWidth: 400,
           pointerEvents: "all",
+          animation: "slideIn 0.3s ease, fadeUp 0.3s ease",
         }}
       >
         <Ico
           n={t.type === "success" ? "check" : "x"}
-          size={15}
-          color={t.type === "success" ? "#10b981" : "#ef4444"}
+          size={16}
+          color={t.type === "success" ? "var(--success)" : "var(--danger)"}
         />
-        <span style={{ flex: 1, fontSize: 13, color: "#e8e8f0" }}>{t.msg}</span>
+        <span style={{ flex: 1, fontSize: 14, color: "var(--text-primary)" }}>
+          {t.msg}
+        </span>
         <button
           onClick={() => remove(t.id)}
           style={{
@@ -177,48 +344,81 @@ const Toasts = ({ toasts, remove }) => (
             border: "none",
             cursor: "pointer",
             color: "#666",
-            padding: 2,
+            padding: 4,
             display: "flex",
+            borderRadius: 6,
+          }}
+          aria-label="Dismiss"
+        >
+          <Ico n="x" size={14} />
+        </button>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            height: 3,
+            width: "100%",
+            background: "rgba(255,255,255,0.1)",
+            borderRadius: "0 0 12px 12px",
+            overflow: "hidden",
           }}
         >
-          <Ico n="x" size={13} />
-        </button>
+          <div
+            style={{
+              height: "100%",
+              width: "100%",
+              background:
+                t.type === "success"
+                  ? "var(--success)"
+                  : t.type === "error"
+                    ? "var(--danger)"
+                    : "var(--info)",
+              animation: "shrink 4.5s linear forwards",
+            }}
+          />
+        </div>
       </div>
     ))}
+    <style>{`
+      @keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+    `}</style>
   </div>
 );
 
+// ===== BADGE =====
 const Badge = ({ status }) => {
-  const C = {
+  const styles = {
     active: {
       bg: "rgba(16,185,129,0.15)",
-      c: "#10b981",
-      b: "rgba(16,185,129,0.3)",
+      color: "var(--success)",
+      border: "rgba(16,185,129,0.3)",
     },
     draft: {
       bg: "rgba(245,158,11,0.15)",
-      c: "#f59e0b",
-      b: "rgba(245,158,11,0.3)",
+      color: "var(--warning)",
+      border: "rgba(245,158,11,0.3)",
     },
     archived: {
       bg: "rgba(107,114,128,0.15)",
-      c: "#6b7280",
-      b: "rgba(107,114,128,0.3)",
+      color: "#6b7280",
+      border: "rgba(107,114,128,0.3)",
     },
   };
-  const s = C[status] || C.draft;
+  const s = styles[status] || styles.draft;
   return (
     <span
       style={{
-        padding: "3px 10px",
+        padding: "4px 10px",
         borderRadius: 20,
         fontSize: 11,
         fontWeight: 600,
         background: s.bg,
-        color: s.c,
-        border: `1px solid ${s.b}`,
+        color: s.color,
+        border: `1px solid ${s.border}`,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
+        display: "inline-block",
       }}
     >
       {status || "draft"}
@@ -226,18 +426,18 @@ const Badge = ({ status }) => {
   );
 };
 
-// THE FIXED MODAL - uses CSS class modal-overlay for proper scrolling
+// ===== MODAL =====
 const Modal = ({ title, subtitle, onClose, children, maxWidth = 660 }) =>
   createPortal(
     <div
       className="modal-overlay"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="modal-box fade-up" style={{ maxWidth }}>
+      <div className="modal-box" style={{ maxWidth }}>
         <div
           style={{
-            padding: "22px 28px 18px",
-            borderBottom: "1px solid #1e1e2e",
+            padding: "24px 28px 16px",
+            borderBottom: "1px solid var(--border-color)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -247,31 +447,34 @@ const Modal = ({ title, subtitle, onClose, children, maxWidth = 660 }) =>
           <div>
             <h2
               style={{
-                fontFamily: "'Syne',sans-serif",
-                fontSize: 20,
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 22,
                 fontWeight: 700,
                 color: "#fff",
+                lineHeight: 1.2,
               }}
             >
               {title}
             </h2>
             {subtitle && (
-              <p style={{ fontSize: 13, color: "#666", marginTop: 3 }}>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-muted)",
+                  marginTop: 4,
+                }}
+              >
                 {subtitle}
               </p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="btn-ghost"
-            style={{
-              padding: 8,
-              borderRadius: 10,
-              display: "flex",
-              flexShrink: 0,
-            }}
+            className="btn btn-secondary"
+            style={{ padding: 8, borderRadius: 10 }}
+            aria-label="Close"
           >
-            <Ico n="x" size={16} />
+            <Ico n="x" size={18} />
           </button>
         </div>
         <div style={{ padding: "24px 28px 28px" }}>{children}</div>
@@ -280,6 +483,7 @@ const Modal = ({ title, subtitle, onClose, children, maxWidth = 660 }) =>
     document.body,
   );
 
+// ===== FIELD =====
 const Field = ({
   label,
   value,
@@ -293,9 +497,9 @@ const Field = ({
   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
     <label
       style={{
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 600,
-        color: "#888",
+        color: "var(--text-secondary)",
         textTransform: "uppercase",
         letterSpacing: "0.6px",
       }}
@@ -310,7 +514,7 @@ const Field = ({
           style={{
             position: "absolute",
             left: 12,
-            color: "#666",
+            color: "var(--text-muted)",
             fontSize: 14,
             pointerEvents: "none",
             zIndex: 1,
@@ -326,8 +530,6 @@ const Field = ({
           className="field-input"
           style={{
             padding: "10px 14px",
-            borderRadius: 10,
-            fontSize: 14,
             appearance: "none",
             cursor: "pointer",
           }}
@@ -344,12 +546,7 @@ const Field = ({
           onChange={(e) => onChange(e.target.value)}
           rows={rows || 3}
           className="field-input"
-          style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            fontSize: 14,
-            resize: "vertical",
-          }}
+          style={{ resize: "vertical" }}
         />
       ) : (
         <input
@@ -359,8 +556,6 @@ const Field = ({
           className="field-input"
           style={{
             padding: `10px ${suf ? "40px" : "14px"} 10px ${pre ? "36px" : "14px"}`,
-            borderRadius: 10,
-            fontSize: 14,
           }}
         />
       )}
@@ -369,7 +564,7 @@ const Field = ({
           style={{
             position: "absolute",
             right: 12,
-            color: "#666",
+            color: "var(--text-muted)",
             fontSize: 14,
             pointerEvents: "none",
           }}
@@ -381,6 +576,7 @@ const Field = ({
   </div>
 );
 
+// ===== PRICE MODAL =====
 const PriceModal = ({ count, onApply, onClose }) => {
   const [mode, setMode] = useState("percent");
   const [val, setVal] = useState("");
@@ -401,43 +597,31 @@ const PriceModal = ({ count, onApply, onClose }) => {
       onClose={onClose}
       maxWidth={500}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div>
           <p
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
-              color: "#888",
-              textTransform: "uppercase",
-              letterSpacing: "0.6px",
+              color: "var(--text-secondary)",
               marginBottom: 8,
+              textTransform: "uppercase",
             }}
           >
             Type
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             {[
-              { id: "percent", l: "% Percentage" },
-              { id: "fixed", l: "$ Fixed" },
+              { id: "percent", label: "% Percentage" },
+              { id: "fixed", label: "$ Fixed" },
             ].map((m) => (
               <button
                 key={m.id}
                 onClick={() => setMode(m.id)}
-                style={{
-                  flex: 1,
-                  padding: "10px",
-                  borderRadius: 10,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  border: `2px solid ${mode === m.id ? "#6366f1" : "#2a2a3d"}`,
-                  background:
-                    mode === m.id ? "rgba(99,102,241,0.12)" : "#13131a",
-                  color: mode === m.id ? "#818cf8" : "#888",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
+                className={`btn ${mode === m.id ? "btn-primary" : "btn-secondary"}`}
+                style={{ flex: 1 }}
               >
-                {m.l}
+                {m.label}
               </button>
             ))}
           </div>
@@ -445,38 +629,32 @@ const PriceModal = ({ count, onApply, onClose }) => {
         <div>
           <p
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
-              color: "#888",
-              textTransform: "uppercase",
-              letterSpacing: "0.6px",
+              color: "var(--text-secondary)",
               marginBottom: 8,
+              textTransform: "uppercase",
             }}
           >
             Direction
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             {[
-              { id: "increase", l: "↑ Increase", c: "#10b981" },
-              { id: "decrease", l: "↓ Decrease", c: "#ef4444" },
+              { id: "increase", label: "↑ Increase", color: "var(--success)" },
+              { id: "decrease", label: "↓ Decrease", color: "var(--danger)" },
             ].map((d) => (
               <button
                 key={d.id}
                 onClick={() => setDir(d.id)}
+                className="btn btn-secondary"
                 style={{
                   flex: 1,
-                  padding: "10px",
-                  borderRadius: 10,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  border: `2px solid ${dir === d.id ? d.c : "#2a2a3d"}`,
-                  background: dir === d.id ? `${d.c}18` : "#13131a",
-                  color: dir === d.id ? d.c : "#888",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
+                  borderColor: dir === d.id ? d.color : undefined,
+                  background: dir === d.id ? `${d.color}15` : undefined,
+                  color: dir === d.id ? d.color : undefined,
                 }}
               >
-                {d.l}
+                {d.label}
               </button>
             ))}
           </div>
@@ -493,41 +671,37 @@ const PriceModal = ({ count, onApply, onClose }) => {
             style={{
               background: "rgba(99,102,241,0.08)",
               border: "1px solid rgba(99,102,241,0.2)",
-              borderRadius: 10,
-              padding: "12px 14px",
-              fontSize: 13,
-              color: "#818cf8",
+              borderRadius: 12,
+              padding: "14px 16px",
+              fontSize: 14,
+              color: "var(--accent)",
             }}
           >
             $100.00 →{" "}
             <strong
-              style={{ color: dir === "increase" ? "#10b981" : "#ef4444" }}
+              style={{
+                color: dir === "increase" ? "var(--success)" : "var(--danger)",
+              }}
             >
               ${preview}
             </strong>
           </div>
         )}
-        <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
+        <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
           <button
             onClick={() =>
               val && onApply({ mode, value: parseFloat(val), dir })
             }
             disabled={!val}
-            className="btn-primary"
-            style={{
-              flex: 1,
-              padding: "12px",
-              borderRadius: 12,
-              fontSize: 14,
-              fontWeight: 600,
-            }}
+            className="btn btn-primary"
+            style={{ flex: 1, padding: "12px" }}
           >
             Apply to {count} Products
           </button>
           <button
             onClick={onClose}
-            className="btn-ghost"
-            style={{ padding: "12px 20px", borderRadius: 12, fontSize: 14 }}
+            className="btn btn-secondary"
+            style={{ padding: "12px 24px" }}
           >
             Cancel
           </button>
@@ -537,6 +711,7 @@ const PriceModal = ({ count, onApply, onClose }) => {
   );
 };
 
+// ===== EDIT MODAL =====
 const EditModal = ({ product, onSave, onClose }) => {
   const [f, setF] = useState({
     title: product?.title || "",
@@ -552,7 +727,7 @@ const EditModal = ({ product, onSave, onClose }) => {
     image_src: product?.images?.[0]?.src || "",
   });
   const [saving, setSaving] = useState(false);
-  const s = (k) => (v) => setF((p) => ({ ...p, [k]: v }));
+  const update = (key) => (val) => setF((prev) => ({ ...prev, [key]: val }));
   const save = async () => {
     setSaving(true);
     await onSave({
@@ -581,21 +756,21 @@ const EditModal = ({ product, onSave, onClose }) => {
       onClose={onClose}
       maxWidth={740}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <div style={{ gridColumn: "1/-1" }}>
-          <Field label="Title *" value={f.title} onChange={s("title")} />
+          <Field label="Title *" value={f.title} onChange={update("title")} />
         </div>
-        <Field label="Vendor" value={f.vendor} onChange={s("vendor")} />
+        <Field label="Vendor" value={f.vendor} onChange={update("vendor")} />
         <Field
           label="Product Type"
           value={f.product_type}
-          onChange={s("product_type")}
+          onChange={update("product_type")}
         />
-        <Field label="Tags" value={f.tags} onChange={s("tags")} />
+        <Field label="Tags" value={f.tags} onChange={update("tags")} />
         <Field
           label="Status"
           value={f.status}
-          onChange={s("status")}
+          onChange={update("status")}
           options={[
             { v: "draft", l: "Draft" },
             { v: "active", l: "Active" },
@@ -605,18 +780,17 @@ const EditModal = ({ product, onSave, onClose }) => {
         <div
           style={{
             gridColumn: "1/-1",
-            borderTop: "1px solid #1e1e2e",
-            paddingTop: 14,
-            marginTop: 2,
+            borderTop: "1px solid var(--border-color)",
+            paddingTop: 16,
+            marginTop: 8,
           }}
         >
           <p
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
-              color: "#555",
+              color: "var(--text-muted)",
               textTransform: "uppercase",
-              letterSpacing: "0.6px",
               marginBottom: 12,
             }}
           >
@@ -626,39 +800,38 @@ const EditModal = ({ product, onSave, onClose }) => {
         <Field
           label="Price"
           value={f.price}
-          onChange={s("price")}
+          onChange={update("price")}
           type="number"
           pre="$"
         />
         <Field
           label="Compare At Price"
           value={f.compare_at_price}
-          onChange={s("compare_at_price")}
+          onChange={update("compare_at_price")}
           type="number"
           pre="$"
         />
-        <Field label="SKU" value={f.sku} onChange={s("sku")} />
+        <Field label="SKU" value={f.sku} onChange={update("sku")} />
         <Field
           label="Inventory Qty"
           value={f.inventory_quantity}
-          onChange={s("inventory_quantity")}
+          onChange={update("inventory_quantity")}
           type="number"
         />
         <div
           style={{
             gridColumn: "1/-1",
-            borderTop: "1px solid #1e1e2e",
-            paddingTop: 14,
-            marginTop: 2,
+            borderTop: "1px solid var(--border-color)",
+            paddingTop: 16,
+            marginTop: 8,
           }}
         >
           <p
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
-              color: "#555",
+              color: "var(--text-muted)",
               textTransform: "uppercase",
-              letterSpacing: "0.6px",
               marginBottom: 12,
             }}
           >
@@ -669,14 +842,14 @@ const EditModal = ({ product, onSave, onClose }) => {
           <Field
             label="Image URL"
             value={f.image_src}
-            onChange={s("image_src")}
+            onChange={update("image_src")}
           />
         </div>
         <div style={{ gridColumn: "1/-1" }}>
           <Field
             label="Description (HTML)"
             value={f.body_html}
-            onChange={s("body_html")}
+            onChange={update("body_html")}
             type="textarea"
             rows={4}
           />
@@ -685,21 +858,15 @@ const EditModal = ({ product, onSave, onClose }) => {
           style={{
             gridColumn: "1/-1",
             display: "flex",
-            gap: 10,
-            paddingTop: 6,
+            gap: 12,
+            paddingTop: 8,
           }}
         >
           <button
             onClick={save}
             disabled={saving || !f.title}
-            className="btn-primary"
-            style={{
-              flex: 1,
-              padding: "13px",
-              borderRadius: 12,
-              fontSize: 15,
-              fontWeight: 600,
-            }}
+            className="btn btn-primary"
+            style={{ flex: 1, padding: "13px" }}
           >
             {saving ? (
               <span
@@ -710,8 +877,7 @@ const EditModal = ({ product, onSave, onClose }) => {
                   gap: 8,
                 }}
               >
-                <Spin size={16} />
-                Saving...
+                <Spin size={16} /> Saving...
               </span>
             ) : (
               "Save to Shopify"
@@ -719,8 +885,8 @@ const EditModal = ({ product, onSave, onClose }) => {
           </button>
           <button
             onClick={onClose}
-            className="btn-ghost"
-            style={{ padding: "13px 24px", borderRadius: 12, fontSize: 15 }}
+            className="btn btn-secondary"
+            style={{ padding: "13px 24px" }}
           >
             Cancel
           </button>
@@ -730,6 +896,7 @@ const EditModal = ({ product, onSave, onClose }) => {
   );
 };
 
+// ===== PRODUCT CARD =====
 const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
   const img = p.images?.[0]?.src;
   const price = p.variants?.[0]?.price;
@@ -737,24 +904,25 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
   const inv = p.variants?.reduce((s, v) => s + (v.inventory_quantity || 0), 0);
   return (
     <div
-      className="card-hover fade-up"
+      className="card-hover"
       style={{
-        background: "#13131a",
-        border: `2px solid ${sel ? "#6366f1" : "#1e1e2e"}`,
-        borderRadius: 16,
+        background: "var(--bg-card)",
+        border: `2px solid ${sel ? "var(--accent)" : "var(--border-color)"}`,
+        borderRadius: 20,
         overflow: "hidden",
         position: "relative",
       }}
     >
-      <div style={{ position: "absolute", top: 10, left: 10, zIndex: 2 }}>
+      <div style={{ position: "absolute", top: 12, left: 12, zIndex: 2 }}>
         <input
           type="checkbox"
           className="chk"
           checked={sel}
           onChange={() => onSel(p.id)}
+          aria-label={`Select ${p.title}`}
         />
       </div>
-      <div style={{ position: "absolute", top: 10, right: 10, zIndex: 2 }}>
+      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 2 }}>
         <Badge status={p.status} />
       </div>
       <div
@@ -775,10 +943,12 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              transition: "transform 0.3s",
+              transition: "transform 0.4s ease",
             }}
-            onMouseOver={(e) => (e.target.style.transform = "scale(1.06)")}
-            onMouseOut={(e) => (e.target.style.transform = "scale(1)")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.transform = "scale(1.08)")
+            }
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           />
         ) : (
           <div
@@ -795,14 +965,14 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
           </div>
         )}
       </div>
-      <div style={{ padding: 14 }}>
+      <div style={{ padding: 16 }}>
         <h3
           style={{
-            fontFamily: "'Syne',sans-serif",
-            fontSize: 14,
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 16,
             fontWeight: 700,
-            color: "#e8e8f0",
-            marginBottom: 3,
+            color: "var(--text-primary)",
+            marginBottom: 4,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -811,7 +981,13 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
           {p.title}
         </h3>
         {p.vendor && (
-          <p style={{ fontSize: 12, color: "#555", marginBottom: 10 }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--text-muted)",
+              marginBottom: 10,
+            }}
+          >
             {p.vendor}
           </p>
         )}
@@ -820,18 +996,20 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: 12,
+            marginBottom: 14,
           }}
         >
           <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: "#818cf8" }}>
+            <span
+              style={{ fontSize: 18, fontWeight: 700, color: "var(--accent)" }}
+            >
               {price ? `$${price}` : "—"}
             </span>
             {cmp && (
               <span
                 style={{
                   fontSize: 12,
-                  color: "#555",
+                  color: "var(--text-muted)",
                   textDecoration: "line-through",
                 }}
               >
@@ -842,11 +1020,12 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
           <span
             style={{
               fontSize: 11,
-              color: inv > 0 ? "#10b981" : "#ef4444",
+              color: inv > 0 ? "var(--success)" : "var(--danger)",
               background:
                 inv > 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
-              padding: "2px 8px",
+              padding: "3px 8px",
               borderRadius: 20,
+              fontWeight: 500,
             }}
           >
             {inv} in stock
@@ -855,34 +1034,19 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={() => onEdit(p)}
-            className="btn-ghost"
-            style={{
-              flex: 1,
-              padding: "8px",
-              borderRadius: 10,
-              color: "#818cf8",
-              fontSize: 13,
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 5,
-            }}
+            className="btn btn-secondary"
+            style={{ flex: 1, padding: "8px", fontSize: 13 }}
+            aria-label="Edit"
           >
-            <Ico n="edit" size={13} color="#818cf8" />
-            Edit
+            <Ico n="edit" size={13} color="var(--accent)" /> Edit
           </button>
           <button
             onClick={() => onDel(p.id)}
-            className="btn-ghost"
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              color: "#ef4444",
-              display: "flex",
-            }}
+            className="btn btn-danger"
+            style={{ padding: "8px 10px" }}
+            aria-label="Delete"
           >
-            <Ico n="trash" size={13} color="#ef4444" />
+            <Ico n="trash" size={13} color="var(--danger)" />
           </button>
         </div>
       </div>
@@ -890,6 +1054,7 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
   );
 };
 
+// ===== PRODUCTS PAGE =====
 const ProductsPage = ({ toast }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -912,7 +1077,7 @@ const ProductsPage = ({ toast }) => {
       toast("Failed to load products", "error");
     }
     setLoading(false);
-  }, [statusF]);
+  }, [statusF, toast]);
 
   useEffect(() => {
     load();
@@ -925,10 +1090,10 @@ const ProductsPage = ({ toast }) => {
       p.vendor?.toLowerCase().includes(search.toLowerCase()),
   );
   const toggleSel = (id) =>
-    setSel((p) => {
-      const n = new Set(p);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
+    setSel((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
     });
   const selAll = () =>
     setSel(
@@ -965,6 +1130,7 @@ const ProductsPage = ({ toast }) => {
     }
     setDeleting(null);
   };
+
   const handleRemoveDuplicates = async () => {
     try {
       const preview = await api.get("/products/find-duplicates");
@@ -1059,7 +1225,10 @@ const ProductsPage = ({ toast }) => {
   };
 
   return (
-    <div className="fade-up">
+    <div
+      className="fade-up"
+      style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px" }}
+    >
       {editM !== null && (
         <EditModal
           product={editM === true ? null : editM}
@@ -1075,11 +1244,11 @@ const ProductsPage = ({ toast }) => {
         />
       )}
 
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 28 }}>
         <h1
           style={{
-            fontFamily: "'Syne',sans-serif",
-            fontSize: 30,
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 32,
             fontWeight: 800,
             color: "#fff",
             letterSpacing: "-0.5px",
@@ -1087,97 +1256,113 @@ const ProductsPage = ({ toast }) => {
         >
           Products
         </h1>
-        <p style={{ color: "#555", marginTop: 4, fontSize: 14 }}>
+        <p style={{ color: "var(--text-muted)", marginTop: 4, fontSize: 15 }}>
           Manage your Shopify product catalog
         </p>
       </div>
 
+      {/* Stats Cards */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3,1fr)",
-          gap: 12,
-          marginBottom: 20,
+          gap: 16,
+          marginBottom: 24,
         }}
       >
         {[
-          { l: "Total", v: stats.total, c: "#818cf8", i: "products" },
-          { l: "Active", v: stats.active, c: "#10b981", i: "check" },
-          { l: "Drafts", v: stats.draft, c: "#f59e0b", i: "edit" },
+          {
+            label: "Total",
+            value: stats.total,
+            color: "var(--accent)",
+            icon: "products",
+          },
+          {
+            label: "Active",
+            value: stats.active,
+            color: "var(--success)",
+            icon: "check",
+          },
+          {
+            label: "Drafts",
+            value: stats.draft,
+            color: "var(--warning)",
+            icon: "edit",
+          },
         ].map((s) => (
           <div
-            key={s.l}
+            key={s.label}
             style={{
-              background: "#13131a",
-              border: "1px solid #1e1e2e",
-              borderRadius: 14,
-              padding: "14px 18px",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-color)",
+              borderRadius: 18,
+              padding: "18px 20px",
               display: "flex",
               alignItems: "center",
-              gap: 12,
+              gap: 14,
             }}
           >
             <div
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                background: `${s.c}18`,
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: `${s.color}18`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Ico n={s.i} size={17} color={s.c} />
+              <Ico n={s.icon} size={20} color={s.color} />
             </div>
             <div>
               <div
                 style={{
-                  fontSize: 22,
+                  fontSize: 26,
                   fontWeight: 700,
-                  color: s.c,
-                  fontFamily: "'Syne',sans-serif",
+                  color: s.color,
+                  fontFamily: "'Syne', sans-serif",
+                  lineHeight: 1.2,
                 }}
               >
-                {loading ? "—" : s.v}
+                {loading ? "—" : s.value}
               </div>
-              <div style={{ fontSize: 12, color: "#555" }}>{s.l}</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                {s.label}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Toolbar */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 10,
-          marginBottom: 16,
+          gap: 12,
+          marginBottom: 20,
           flexWrap: "wrap",
         }}
       >
-        <div style={{ position: "relative", flex: 1, minWidth: 180 }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 240 }}>
           <div
             style={{
               position: "absolute",
-              left: 11,
+              left: 12,
               top: "50%",
               transform: "translateY(-50%)",
               pointerEvents: "none",
             }}
           >
-            <Ico n="search" size={14} color="#555" />
+            <Ico n="search" size={16} color="var(--text-muted)" />
           </div>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products..."
             className="field-input"
-            style={{
-              padding: "9px 14px 9px 34px",
-              borderRadius: 12,
-              fontSize: 14,
-            }}
+            style={{ padding: "10px 14px 10px 38px", borderRadius: 14 }}
           />
         </div>
         <select
@@ -1185,9 +1370,8 @@ const ProductsPage = ({ toast }) => {
           onChange={(e) => setStatusF(e.target.value)}
           className="field-input"
           style={{
-            padding: "9px 14px",
-            borderRadius: 12,
-            fontSize: 14,
+            padding: "10px 14px",
+            borderRadius: 14,
             cursor: "pointer",
             width: "auto",
           }}
@@ -1206,157 +1390,115 @@ const ProductsPage = ({ toast }) => {
         <div
           style={{
             display: "flex",
-            background: "#13131a",
-            border: "1px solid #2a2a3d",
-            borderRadius: 10,
-            padding: 3,
-            gap: 3,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-light)",
+            borderRadius: 12,
+            padding: 4,
+            gap: 4,
           }}
         >
           {[
-            { id: "grid", i: "grid" },
-            { id: "list", i: "list" },
+            { id: "grid", icon: "grid" },
+            { id: "list", icon: "list" },
           ].map((v) => (
             <button
               key={v.id}
               onClick={() => setView(v.id)}
               style={{
-                padding: "6px 9px",
-                borderRadius: 7,
-                background: view === v.id ? "#6366f1" : "transparent",
+                padding: "8px 10px",
+                borderRadius: 8,
+                background: view === v.id ? "var(--accent)" : "transparent",
                 border: "none",
                 cursor: "pointer",
-                display: "flex",
-                color: view === v.id ? "#fff" : "#555",
-                transition: "all 0.15s",
+                color: view === v.id ? "#fff" : "var(--text-muted)",
+                transition: "var(--transition)",
               }}
+              aria-label={`${v.id} view`}
             >
-              <Ico n={v.i} size={14} />
+              <Ico n={v.icon} size={16} />
             </button>
           ))}
         </div>
         <button
           onClick={syncShopify}
           disabled={loading}
-          className="btn-primary"
-          style={{
-            padding: "9px 16px",
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            opacity: loading ? 0.6 : 1,
-          }}
+          className="btn btn-primary"
+          style={{ padding: "10px 18px" }}
         >
           🔄 Sync Shopify
         </button>
         <button
           onClick={() => setEditM(true)}
-          className="btn-primary"
-          style={{
-            padding: "9px 16px",
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
+          className="btn btn-primary"
+          style={{ padding: "10px 18px" }}
         >
-          <Ico n="plus" size={15} color="#fff" />
-          Add Product
+          <Ico n="plus" size={16} /> Add Product
         </button>
       </div>
 
+      {/* Bulk Actions */}
       {sel.size > 0 && (
         <div
           className="fade-up"
           style={{
             background: "rgba(99,102,241,0.08)",
             border: "1px solid rgba(99,102,241,0.25)",
-            borderRadius: 12,
-            padding: "10px 16px",
-            marginBottom: 14,
+            borderRadius: 14,
+            padding: "12px 18px",
+            marginBottom: 18,
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 12,
             flexWrap: "wrap",
           }}
         >
-          <span style={{ fontSize: 13, color: "#818cf8", fontWeight: 600 }}>
+          <span
+            style={{ fontSize: 14, color: "var(--accent)", fontWeight: 600 }}
+          >
             {sel.size} selected
           </span>
           <div style={{ flex: 1 }} />
           <button
             onClick={() => setPriceM(true)}
-            className="btn-ghost"
-            style={{
-              padding: "7px 14px",
-              borderRadius: 9,
-              color: "#818cf8",
-              fontSize: 13,
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
+            className="btn btn-secondary"
+            style={{ padding: "8px 14px" }}
           >
-            <Ico n="percent" size={13} color="#818cf8" />
-            Adjust Prices
+            <Ico n="percent" size={14} color="var(--accent)" /> Adjust Prices
           </button>
           <button
             onClick={handleRemoveDuplicates}
-            className="btn-ghost"
-            style={{
-              padding: "7px 14px",
-              borderRadius: 9,
-              color: "#f59e0b",
-              fontSize: 13,
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
+            className="btn btn-secondary"
+            style={{ padding: "8px 14px" }}
           >
-            <Ico n="percent" size={13} color="#f59e0b" />
-            Remove Duplicates
+            <Ico n="percent" size={14} color="var(--warning)" /> Remove
+            Duplicates
           </button>
           <button
             onClick={handleBulkDel}
-            className="btn-ghost"
-            style={{
-              padding: "7px 14px",
-              borderRadius: 9,
-              color: "#ef4444",
-              fontSize: 13,
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
+            className="btn btn-danger"
+            style={{ padding: "8px 14px" }}
           >
-            <Ico n="trash" size={13} color="#ef4444" />
-            Delete
+            <Ico n="trash" size={14} /> Delete
           </button>
           <button
             onClick={() => setSel(new Set())}
-            className="btn-ghost"
-            style={{ padding: "7px 9px", borderRadius: 9, display: "flex" }}
+            className="btn btn-secondary"
+            style={{ padding: "8px 10px" }}
+            aria-label="Clear selection"
           >
-            <Ico n="x" size={13} />
+            <Ico n="x" size={14} />
           </button>
         </div>
       )}
 
+      {/* Select All */}
       {filtered.length > 0 && (
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            marginBottom: 12,
+            gap: 10,
+            marginBottom: 14,
           }}
         >
           <input
@@ -1364,27 +1506,36 @@ const ProductsPage = ({ toast }) => {
             className="chk"
             checked={sel.size === filtered.length && filtered.length > 0}
             onChange={selAll}
+            id="selectAll"
           />
-          <span style={{ fontSize: 13, color: "#555" }}>
+          <label
+            htmlFor="selectAll"
+            style={{
+              fontSize: 14,
+              color: "var(--text-secondary)",
+              cursor: "pointer",
+            }}
+          >
             Select all {filtered.length}
-          </span>
+          </label>
         </div>
       )}
 
+      {/* Product Grid/List */}
       {loading ? (
         <div
           style={{
             display: "grid",
             gridTemplateColumns:
               view === "grid" ? "repeat(auto-fill,minmax(220px,1fr))" : "1fr",
-            gap: 14,
+            gap: 16,
           }}
         >
           {[...Array(8)].map((_, i) => (
             <div
               key={i}
               className="skeleton"
-              style={{ height: view === "grid" ? 300 : 66 }}
+              style={{ height: view === "grid" ? 320 : 72 }}
             />
           ))}
         </div>
@@ -1393,7 +1544,7 @@ const ProductsPage = ({ toast }) => {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))",
-            gap: 14,
+            gap: 16,
           }}
         >
           {filtered.map((p) => (
@@ -1409,10 +1560,11 @@ const ProductsPage = ({ toast }) => {
           {filtered.length === 0 && (
             <p
               style={{
-                color: "#444",
+                color: "var(--text-muted)",
                 gridColumn: "1/-1",
                 textAlign: "center",
                 padding: 60,
+                fontSize: 16,
               }}
             >
               No products found
@@ -1422,28 +1574,29 @@ const ProductsPage = ({ toast }) => {
       ) : (
         <div
           style={{
-            background: "#13131a",
-            border: "1px solid #1e1e2e",
-            borderRadius: 14,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
+            borderRadius: 18,
             overflow: "hidden",
           }}
         >
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table
+            style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}
+          >
             <thead>
-              <tr style={{ borderBottom: "1px solid #1e1e2e" }}>
-                <th style={{ padding: "11px 14px", width: 36 }}></th>
+              <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
+                <th style={{ padding: "14px 16px", width: 40 }}></th>
                 {["Product", "Vendor", "Price", "Stock", "Status", ""].map(
                   (h) => (
                     <th
                       key={h}
                       style={{
-                        padding: "11px 14px",
+                        padding: "14px 16px",
                         textAlign: "left",
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: 600,
-                        color: "#555",
+                        color: "var(--text-muted)",
                         textTransform: "uppercase",
-                        letterSpacing: "0.5px",
                       }}
                     >
                       {h}
@@ -1465,36 +1618,40 @@ const ProductsPage = ({ toast }) => {
                     key={p.id}
                     style={{
                       borderBottom:
-                        i < filtered.length - 1 ? "1px solid #1a1a2e" : "none",
+                        i < filtered.length - 1
+                          ? "1px solid var(--border-color)"
+                          : "none",
+                      transition: "background 0.15s",
                     }}
-                    onMouseOver={(e) =>
+                    onMouseEnter={(e) =>
                       (e.currentTarget.style.background = "#17172a")
                     }
-                    onMouseOut={(e) =>
+                    onMouseLeave={(e) =>
                       (e.currentTarget.style.background = "transparent")
                     }
                   >
-                    <td style={{ padding: "10px 14px" }}>
+                    <td style={{ padding: "12px 16px" }}>
                       <input
                         type="checkbox"
                         className="chk"
                         checked={sel.has(p.id)}
                         onChange={() => toggleSel(p.id)}
+                        aria-label={`Select ${p.title}`}
                       />
                     </td>
-                    <td style={{ padding: "10px 14px" }}>
+                    <td style={{ padding: "12px 16px" }}>
                       <div
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 10,
+                          gap: 12,
                         }}
                       >
                         <div
                           style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 8,
+                            width: 44,
+                            height: 44,
+                            borderRadius: 10,
                             background: "#0d0d14",
                             overflow: "hidden",
                             flexShrink: 0,
@@ -1514,21 +1671,26 @@ const ProductsPage = ({ toast }) => {
                               }}
                             />
                           ) : (
-                            <Ico n="image" size={16} color="#2a2a3d" />
+                            <Ico n="image" size={18} color="#2a2a3d" />
                           )}
                         </div>
                         <div>
                           <div
                             style={{
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: 600,
-                              color: "#e8e8f0",
+                              color: "var(--text-primary)",
                             }}
                           >
                             {p.title}
                           </div>
                           {p.product_type && (
-                            <div style={{ fontSize: 11, color: "#555" }}>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "var(--text-muted)",
+                              }}
+                            >
                               {p.product_type}
                             </div>
                           )}
@@ -1537,63 +1699,56 @@ const ProductsPage = ({ toast }) => {
                     </td>
                     <td
                       style={{
-                        padding: "10px 14px",
-                        fontSize: 13,
-                        color: "#777",
+                        padding: "12px 16px",
+                        color: "var(--text-secondary)",
                       }}
                     >
                       {p.vendor || "—"}
                     </td>
                     <td
                       style={{
-                        padding: "10px 14px",
-                        fontSize: 13,
+                        padding: "12px 16px",
                         fontWeight: 600,
-                        color: "#818cf8",
+                        color: "var(--accent)",
                       }}
                     >
                       {price ? `$${price}` : "—"}
                     </td>
                     <td
                       style={{
-                        padding: "10px 14px",
-                        fontSize: 12,
-                        color: inv > 0 ? "#10b981" : "#ef4444",
+                        padding: "12px 16px",
+                        color: inv > 0 ? "var(--success)" : "var(--danger)",
                       }}
                     >
                       {inv} units
                     </td>
-                    <td style={{ padding: "10px 14px" }}>
+                    <td style={{ padding: "12px 16px" }}>
                       <Badge status={p.status} />
                     </td>
-                    <td style={{ padding: "10px 14px" }}>
-                      <div style={{ display: "flex", gap: 6 }}>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", gap: 8 }}>
                         <button
                           onClick={() => setEditM(p)}
-                          className="btn-ghost"
-                          style={{
-                            padding: "6px 9px",
-                            borderRadius: 8,
-                            display: "flex",
-                          }}
+                          className="btn btn-secondary"
+                          style={{ padding: "8px 10px" }}
+                          aria-label="Edit"
                         >
-                          <Ico n="edit" size={13} color="#818cf8" />
+                          <Ico n="edit" size={14} color="var(--accent)" />
                         </button>
                         <button
                           onClick={() => handleDel(p.id)}
                           disabled={deleting === p.id}
-                          className="btn-ghost"
+                          className="btn btn-secondary"
                           style={{
-                            padding: "6px 9px",
-                            borderRadius: 8,
-                            display: "flex",
-                            color: "#ef4444",
+                            padding: "8px 10px",
+                            color: "var(--danger)",
                           }}
+                          aria-label="Delete"
                         >
                           {deleting === p.id ? (
-                            <Spin size={13} />
+                            <Spin size={14} />
                           ) : (
-                            <Ico n="trash" size={13} color="#ef4444" />
+                            <Ico n="trash" size={14} color="var(--danger)" />
                           )}
                         </button>
                       </div>
@@ -1606,9 +1761,9 @@ const ProductsPage = ({ toast }) => {
                   <td
                     colSpan={7}
                     style={{
-                      padding: "50px",
+                      padding: 60,
                       textAlign: "center",
-                      color: "#444",
+                      color: "var(--text-muted)",
                     }}
                   >
                     No products
@@ -1623,6 +1778,7 @@ const ProductsPage = ({ toast }) => {
   );
 };
 
+// ===== UPLOAD PAGE =====
 const UploadPage = ({ toast }) => {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -1678,28 +1834,32 @@ const UploadPage = ({ toast }) => {
   const steps = ["Select File", "Preview", "Edit & Review", "Done"];
 
   return (
-    <div className="fade-up">
-      <div style={{ marginBottom: 24 }}>
+    <div
+      className="fade-up"
+      style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}
+    >
+      <div style={{ marginBottom: 28 }}>
         <h1
           style={{
-            fontFamily: "'Syne',sans-serif",
-            fontSize: 30,
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 32,
             fontWeight: 800,
             color: "#fff",
-            letterSpacing: "-0.5px",
           }}
         >
           Upload Products
         </h1>
-        <p style={{ color: "#555", marginTop: 4, fontSize: 14 }}>
+        <p style={{ color: "var(--text-muted)", marginTop: 4, fontSize: 15 }}>
           Import Excel or CSV and push to Shopify
         </p>
       </div>
+
+      {/* Stepper */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          marginBottom: 28,
+          marginBottom: 32,
           gap: 0,
         }}
       >
@@ -1712,40 +1872,40 @@ const UploadPage = ({ toast }) => {
               flex: i < steps.length - 1 ? 1 : "none",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div
                 style={{
-                  width: 26,
-                  height: 26,
+                  width: 30,
+                  height: 30,
                   borderRadius: "50%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   background:
                     step > i + 1
-                      ? "#6366f1"
+                      ? "var(--accent)"
                       : step === i + 1
-                        ? "linear-gradient(135deg,#6366f1,#8b5cf6)"
-                        : "#1e1e2e",
-                  border: `2px solid ${step >= i + 1 ? "#6366f1" : "#2a2a3d"}`,
-                  fontSize: 11,
+                        ? "var(--accent-gradient)"
+                        : "var(--bg-card)",
+                  border: `2px solid ${step >= i + 1 ? "var(--accent)" : "var(--border-light)"}`,
+                  fontSize: 12,
                   fontWeight: 700,
-                  color: step >= i + 1 ? "#fff" : "#555",
-                  transition: "all 0.3s",
+                  color: step >= i + 1 ? "#fff" : "var(--text-muted)",
+                  transition: "var(--transition)",
                 }}
               >
                 {step > i + 1 ? "✓" : i + 1}
               </div>
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 500,
                   color:
                     step === i + 1
-                      ? "#818cf8"
+                      ? "var(--accent)"
                       : step > i + 1
-                        ? "#e8e8f0"
-                        : "#555",
+                        ? "var(--text-primary)"
+                        : "var(--text-muted)",
                 }}
               >
                 {s}
@@ -1755,9 +1915,10 @@ const UploadPage = ({ toast }) => {
               <div
                 style={{
                   flex: 1,
-                  height: 1,
-                  background: step > i + 1 ? "#6366f1" : "#1e1e2e",
-                  margin: "0 10px",
+                  height: 2,
+                  background:
+                    step > i + 1 ? "var(--accent)" : "var(--border-color)",
+                  margin: "0 12px",
                   transition: "background 0.3s",
                 }}
               />
@@ -1765,13 +1926,15 @@ const UploadPage = ({ toast }) => {
           </div>
         ))}
       </div>
+
+      {/* Dropzone */}
       <div
         style={{
-          background: "#13131a",
-          border: "1px solid #1e1e2e",
-          borderRadius: 18,
-          padding: 24,
-          marginBottom: 16,
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-color)",
+          borderRadius: 24,
+          padding: 28,
+          marginBottom: 20,
         }}
       >
         <div
@@ -1786,11 +1949,11 @@ const UploadPage = ({ toast }) => {
             const f = e.dataTransfer.files[0];
             if (f) drop(f);
           }}
-          onClick={() => document.getElementById("fi").click()}
+          onClick={() => document.getElementById("fileInput").click()}
           style={{
-            border: `2px dashed ${drag ? "#6366f1" : file ? "#10b981" : "#2a2a3d"}`,
-            borderRadius: 12,
-            padding: "40px 20px",
+            border: `2px dashed ${drag ? "var(--accent)" : file ? "var(--success)" : "var(--border-light)"}`,
+            borderRadius: 16,
+            padding: "48px 24px",
             textAlign: "center",
             cursor: "pointer",
             background: drag
@@ -1798,82 +1961,63 @@ const UploadPage = ({ toast }) => {
               : file
                 ? "rgba(16,185,129,0.05)"
                 : "transparent",
-            transition: "all 0.2s",
+            transition: "var(--transition)",
           }}
         >
           <input
-            id="fi"
+            id="fileInput"
             type="file"
             accept=".xlsx,.xls,.csv"
             style={{ display: "none" }}
             onChange={(e) => e.target.files[0] && drop(e.target.files[0])}
           />
-          <div style={{ fontSize: 36, marginBottom: 10 }}>📊</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
           <p
             style={{
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: 600,
-              color: file ? "#10b981" : "#e8e8f0",
+              color: file ? "var(--success)" : "var(--text-primary)",
               marginBottom: 4,
             }}
           >
             {file ? `✓ ${file.name}` : "Drop file here or click to browse"}
           </p>
-          <p style={{ fontSize: 12, color: "#555" }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
             Supports .xlsx, .xls, .csv
           </p>
         </div>
         {file && (
-          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
             <button
               onClick={doPreview}
               disabled={loading}
-              className="btn-ghost"
-              style={{
-                flex: 1,
-                padding: "11px",
-                borderRadius: 11,
-                color: "#818cf8",
-                fontSize: 14,
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 7,
-              }}
+              className="btn btn-secondary"
+              style={{ flex: 1, padding: "12px" }}
             >
-              {loading && step === 1 ? <Spin size={15} /> : null}Preview (10
+              {loading && step === 1 ? <Spin size={16} /> : null} Preview (10
               rows)
             </button>
             <button
               onClick={doParse}
               disabled={loading}
-              className="btn-primary"
-              style={{
-                flex: 1,
-                padding: "11px",
-                borderRadius: 11,
-                fontSize: 14,
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 7,
-              }}
+              className="btn btn-primary"
+              style={{ flex: 1, padding: "12px" }}
             >
-              {loading ? <Spin size={15} /> : null}Parse Full Data
+              {loading ? <Spin size={16} /> : null} Parse Full Data
             </button>
           </div>
         )}
       </div>
+
+      {/* Preview */}
       {preview && !full && (
         <div
           style={{
-            background: "#13131a",
-            border: "1px solid #1e1e2e",
-            borderRadius: 18,
-            padding: 22,
-            marginBottom: 16,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
+            borderRadius: 24,
+            padding: 24,
+            marginBottom: 20,
           }}
         >
           <div
@@ -1881,20 +2025,20 @@ const UploadPage = ({ toast }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: 14,
+              marginBottom: 16,
             }}
           >
             <h3
               style={{
-                fontFamily: "'Syne',sans-serif",
-                fontSize: 17,
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 18,
                 fontWeight: 700,
                 color: "#fff",
               }}
             >
               Preview
             </h3>
-            <span style={{ fontSize: 12, color: "#555" }}>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
               {preview.total_rows} rows · first 10 shown
             </span>
           </div>
@@ -1903,20 +2047,20 @@ const UploadPage = ({ toast }) => {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                fontSize: 12,
+                fontSize: 13,
               }}
             >
               <thead>
-                <tr style={{ borderBottom: "1px solid #1e1e2e" }}>
+                <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
                   {preview.columns.map((c) => (
                     <th
                       key={c}
                       style={{
-                        padding: "8px 10px",
+                        padding: "10px 12px",
                         textAlign: "left",
-                        color: "#555",
+                        color: "var(--text-muted)",
                         fontWeight: 600,
-                        fontSize: 10,
+                        fontSize: 11,
                         textTransform: "uppercase",
                         whiteSpace: "nowrap",
                       }}
@@ -1928,14 +2072,17 @@ const UploadPage = ({ toast }) => {
               </thead>
               <tbody>
                 {(preview.preview || preview.data || []).map((row, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid #1a1a2e" }}>
+                  <tr
+                    key={i}
+                    style={{ borderBottom: "1px solid var(--border-color)" }}
+                  >
                     {preview.columns.map((c) => (
                       <td
                         key={c}
                         style={{
-                          padding: "8px 10px",
-                          color: "#777",
-                          maxWidth: 140,
+                          padding: "10px 12px",
+                          color: "var(--text-secondary)",
+                          maxWidth: 160,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
@@ -1951,14 +2098,16 @@ const UploadPage = ({ toast }) => {
           </div>
         </div>
       )}
+
+      {/* Edit & Review */}
       {full && !results && (
         <div
           style={{
-            background: "#13131a",
-            border: "1px solid #1e1e2e",
-            borderRadius: 18,
-            padding: 22,
-            marginBottom: 16,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
+            borderRadius: 24,
+            padding: 24,
+            marginBottom: 20,
           }}
         >
           <div
@@ -1966,41 +2115,32 @@ const UploadPage = ({ toast }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: 14,
+              marginBottom: 16,
             }}
           >
             <h3
               style={{
-                fontFamily: "'Syne',sans-serif",
-                fontSize: 17,
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 18,
                 fontWeight: 700,
                 color: "#fff",
               }}
             >
               Edit & Review
             </h3>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 12, color: "#555" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 {full.total_rows} rows
               </span>
               <button
                 onClick={doPush}
                 disabled={pushing}
-                className="btn-primary"
-                style={{
-                  padding: "9px 18px",
-                  borderRadius: 10,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 7,
-                }}
+                className="btn btn-primary"
+                style={{ padding: "10px 18px" }}
               >
                 {pushing ? (
                   <>
-                    <Spin size={14} />
-                    Pushing...
+                    <Spin size={16} /> Pushing...
                   </>
                 ) : (
                   "🚀 Push to Shopify"
@@ -2008,7 +2148,15 @@ const UploadPage = ({ toast }) => {
               </button>
             </div>
           </div>
-          <div style={{ overflowX: "auto", maxHeight: 460, overflowY: "auto" }}>
+          <div
+            style={{
+              overflowX: "auto",
+              maxHeight: 500,
+              overflowY: "auto",
+              border: "1px solid var(--border-color)",
+              borderRadius: 12,
+            }}
+          >
             <table
               style={{
                 width: "100%",
@@ -2020,16 +2168,16 @@ const UploadPage = ({ toast }) => {
                 style={{
                   position: "sticky",
                   top: 0,
-                  background: "#13131a",
+                  background: "var(--bg-card)",
                   zIndex: 1,
                 }}
               >
-                <tr style={{ borderBottom: "1px solid #1e1e2e" }}>
+                <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
                   <th
                     style={{
-                      padding: "8px 10px",
-                      color: "#555",
-                      fontSize: 10,
+                      padding: "10px 12px",
+                      color: "var(--text-muted)",
+                      fontSize: 11,
                       fontWeight: 600,
                       textTransform: "uppercase",
                     }}
@@ -2040,10 +2188,10 @@ const UploadPage = ({ toast }) => {
                     <th
                       key={c}
                       style={{
-                        padding: "8px 10px",
+                        padding: "10px 12px",
                         textAlign: "left",
-                        color: "#555",
-                        fontSize: 10,
+                        color: "var(--text-muted)",
+                        fontSize: 11,
                         fontWeight: 600,
                         textTransform: "uppercase",
                         whiteSpace: "nowrap",
@@ -2056,18 +2204,21 @@ const UploadPage = ({ toast }) => {
               </thead>
               <tbody>
                 {full.data.map((row, ri) => (
-                  <tr key={ri} style={{ borderBottom: "1px solid #1a1a2e" }}>
+                  <tr
+                    key={ri}
+                    style={{ borderBottom: "1px solid var(--border-color)" }}
+                  >
                     <td
                       style={{
-                        padding: "4px 10px",
-                        color: "#444",
+                        padding: "6px 12px",
+                        color: "var(--text-muted)",
                         textAlign: "center",
                       }}
                     >
                       {ri + 1}
                     </td>
                     {full.columns.map((c) => (
-                      <td key={c} style={{ padding: "3px 5px" }}>
+                      <td key={c} style={{ padding: "4px 8px" }}>
                         <input
                           value={edited[ri]?.[c] ?? String(row[c] || "")}
                           onChange={(e) =>
@@ -2078,10 +2229,9 @@ const UploadPage = ({ toast }) => {
                           }
                           className="field-input"
                           style={{
-                            minWidth: 75,
-                            padding: "4px 7px",
-                            borderRadius: 6,
+                            padding: "6px 8px",
                             fontSize: 11,
+                            minWidth: 80,
                           }}
                         />
                       </td>
@@ -2093,30 +2243,35 @@ const UploadPage = ({ toast }) => {
           </div>
         </div>
       )}
+
+      {/* Results */}
       {results && (
         <div
           className="fade-up"
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}
         >
           <div
             style={{
               background: "rgba(16,185,129,0.08)",
               border: "1px solid rgba(16,185,129,0.2)",
-              borderRadius: 14,
-              padding: 22,
+              borderRadius: 20,
+              padding: 28,
             }}
           >
             <div
               style={{
-                fontSize: 38,
+                fontSize: 42,
                 fontWeight: 800,
-                color: "#10b981",
-                fontFamily: "'Syne',sans-serif",
+                color: "var(--success)",
+                fontFamily: "'Syne', sans-serif",
+                lineHeight: 1,
               }}
             >
               {results.success?.length}
             </div>
-            <div style={{ fontSize: 13, color: "#10b981", marginTop: 3 }}>
+            <div
+              style={{ fontSize: 15, color: "var(--success)", marginTop: 6 }}
+            >
               Created successfully
             </div>
           </div>
@@ -2124,21 +2279,22 @@ const UploadPage = ({ toast }) => {
             style={{
               background: "rgba(239,68,68,0.08)",
               border: "1px solid rgba(239,68,68,0.2)",
-              borderRadius: 14,
-              padding: 22,
+              borderRadius: 20,
+              padding: 28,
             }}
           >
             <div
               style={{
-                fontSize: 38,
+                fontSize: 42,
                 fontWeight: 800,
-                color: "#ef4444",
-                fontFamily: "'Syne',sans-serif",
+                color: "var(--danger)",
+                fontFamily: "'Syne', sans-serif",
+                lineHeight: 1,
               }}
             >
               {results.errors?.length}
             </div>
-            <div style={{ fontSize: 13, color: "#ef4444", marginTop: 3 }}>
+            <div style={{ fontSize: 15, color: "var(--danger)", marginTop: 6 }}>
               Failed
             </div>
           </div>
@@ -2151,13 +2307,8 @@ const UploadPage = ({ toast }) => {
                 setResults(null);
                 setStep(1);
               }}
-              className="btn-primary"
-              style={{
-                padding: "12px 22px",
-                borderRadius: 12,
-                fontSize: 14,
-                fontWeight: 600,
-              }}
+              className="btn btn-primary"
+              style={{ padding: "14px 24px", fontSize: 15 }}
             >
               Upload Another
             </button>
@@ -2168,12 +2319,13 @@ const UploadPage = ({ toast }) => {
   );
 };
 
+// ===== SIDEBAR =====
 const Sidebar = ({ page, set }) => (
   <aside
     style={{
-      width: 210,
-      background: "#0d0d14",
-      borderRight: "1px solid #1a1a2e",
+      width: 220,
+      background: "var(--bg-secondary)",
+      borderRight: "1px solid var(--border-color)",
       display: "flex",
       flexDirection: "column",
       height: "100vh",
@@ -2184,19 +2336,22 @@ const Sidebar = ({ page, set }) => (
     }}
   >
     <div
-      style={{ padding: "22px 18px 18px", borderBottom: "1px solid #1a1a2e" }}
+      style={{
+        padding: "24px 18px 18px",
+        borderBottom: "1px solid var(--border-color)",
+      }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div
           style={{
-            width: 34,
-            height: 34,
-            borderRadius: 9,
-            background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            background: "var(--accent-gradient)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 16,
+            fontSize: 20,
           }}
         >
           🛍️
@@ -2204,33 +2359,35 @@ const Sidebar = ({ page, set }) => (
         <div>
           <div
             style={{
-              fontFamily: "'Syne',sans-serif",
-              fontSize: 14,
+              fontFamily: "'Syne', sans-serif",
+              fontSize: 16,
               fontWeight: 800,
               color: "#fff",
             }}
           >
             ShopManager
           </div>
-          <div style={{ fontSize: 10, color: "#555" }}>Shopify Control</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            Shopify Control
+          </div>
         </div>
       </div>
     </div>
     <nav
       style={{
         flex: 1,
-        padding: "14px 10px",
+        padding: "16px 12px",
         display: "flex",
         flexDirection: "column",
-        gap: 3,
+        gap: 4,
       }}
     >
       {[
-        { id: "products", l: "Products", i: "products" },
-        { id: "upload", l: "Upload", i: "upload" },
-        { id: "collections", l: "Collections", i: "collections" },
-        { id: "inventory", l: "Inventory", i: "inventory" },
-      ].map(({ id, l, i }) => (
+        { id: "products", label: "Products", icon: "products" },
+        { id: "upload", label: "Upload", icon: "upload" },
+        { id: "collections", label: "Collections", icon: "collections" },
+        { id: "inventory", label: "Inventory", icon: "inventory" },
+      ].map(({ id, label, icon }) => (
         <button
           key={id}
           onClick={() => set(id)}
@@ -2238,68 +2395,84 @@ const Sidebar = ({ page, set }) => (
             width: "100%",
             display: "flex",
             alignItems: "center",
-            gap: 9,
-            padding: "9px 11px",
-            borderRadius: 11,
+            gap: 12,
+            padding: "10px 14px",
+            borderRadius: 12,
             border: "none",
             cursor: "pointer",
             background: page === id ? "rgba(99,102,241,0.15)" : "transparent",
-            color: page === id ? "#818cf8" : "#555",
-            fontSize: 13,
+            color: page === id ? "var(--accent)" : "var(--text-muted)",
+            fontSize: 14,
             fontWeight: page === id ? 600 : 400,
-            transition: "all 0.15s",
+            transition: "var(--transition)",
             textAlign: "left",
-            borderLeft:
-              page === id ? "2px solid #6366f1" : "2px solid transparent",
+            borderLeft: `3px solid ${page === id ? "var(--accent)" : "transparent"}`,
           }}
         >
-          <Ico n={i} size={16} color={page === id ? "#818cf8" : "#444"} />
-          {l}
+          <Ico
+            n={icon}
+            size={18}
+            color={page === id ? "var(--accent)" : "#444"}
+          />
+          {label}
         </button>
       ))}
     </nav>
-    <div style={{ padding: "14px 10px", borderTop: "1px solid #1a1a2e" }}>
+    <div
+      style={{
+        padding: "16px 12px",
+        borderTop: "1px solid var(--border-color)",
+      }}
+    >
       <div
         style={{
-          background: "#13131a",
-          border: "1px solid #1e1e2e",
-          borderRadius: 11,
-          padding: "11px 13px",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-color)",
+          borderRadius: 14,
+          padding: "14px 16px",
         }}
       >
         <div
           style={{
-            fontSize: 10,
-            color: "#10b981",
+            fontSize: 11,
+            color: "var(--success)",
             fontWeight: 600,
-            marginBottom: 3,
+            marginBottom: 4,
             textTransform: "uppercase",
-            letterSpacing: "0.5px",
           }}
         >
           ● Connected
         </div>
-        <div style={{ fontSize: 12, color: "#e8e8f0", fontWeight: 500 }}>
+        <div
+          style={{
+            fontSize: 14,
+            color: "var(--text-primary)",
+            fontWeight: 500,
+          }}
+        >
           gunjanck-2
         </div>
-        <div style={{ fontSize: 10, color: "#555" }}>myshopify.com</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          myshopify.com
+        </div>
       </div>
     </div>
   </aside>
 );
 
+// ===== MAIN APP =====
 export default function App() {
   const [page, setPage] = useState("products");
   const { toasts, add, remove } = useToast();
   return (
     <>
-      <FontLoader />
+      <GlobalStyles />
       <Toasts toasts={toasts} remove={remove} />
       <div
         style={{
           display: "flex",
           minHeight: "100vh",
-          background: "#0a0a0f",
+          background: "var(--bg-primary)",
           overflowX: "hidden",
         }}
       >
@@ -2307,20 +2480,16 @@ export default function App() {
         <main
           style={{
             flex: 1,
-            marginLeft: 210,
-            width: "calc(100vw - 210px)",
-            maxWidth: "calc(100vw - 210px)",
+            marginLeft: 220,
+            width: "calc(100vw - 220px)",
             padding: "32px 0",
             minHeight: "100vh",
-            overflowX: "hidden",
           }}
         >
-          <div style={{ maxWidth: "100%", overflowX: "hidden" }}>
-            {page === "products" && <ProductsPage toast={add} />}
-            {page === "upload" && <UploadPage toast={add} />}
-            {page === "collections" && <CollectionsPage />}
-            {page === "inventory" && <InventoryPage />}
-          </div>
+          {page === "products" && <ProductsPage toast={add} />}
+          {page === "upload" && <UploadPage toast={add} />}
+          {page === "collections" && <CollectionsPage />}
+          {page === "inventory" && <InventoryPage />}
         </main>
       </div>
     </>
