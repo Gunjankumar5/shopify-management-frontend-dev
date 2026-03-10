@@ -1086,8 +1086,8 @@ const ProductsPage = ({ toast }) => {
     setLoading(true);
     try {
       const statusParam =
-        statusF && statusF !== "all" ? `&status=${statusF}` : "";
-      const d = await api.get(`/products?limit=250${statusParam}`);
+        statusF && statusF !== "all" ? `?status=${statusF}` : "";
+      const d = await api.get(`/products${statusParam}`);
       setProducts(d.products || []);
     } catch {
       toast("Failed to load products", "error");
