@@ -1,0 +1,229 @@
+/* stylelint-disable */
+/* This file uses Tailwind CSS directives which require special configuration */
+/* stylelint-enable */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  background: #1a1a1a;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #1a1a1a !important;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+* {
+  background-clip: padding-box;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #000000;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333333;
+}
+
+/* Global transitions */
+button, a, input, select, textarea {
+  transition: all 0.3s ease;
+}
+
+/* Text selection */
+::selection {
+  background-color: #000000;
+  color: white;
+}
+
+/* ==================== PROFESSIONAL ENHANCEMENTS ==================== */
+
+/* Professional button styles */
+.btn-primary {
+  @apply px-5 py-3 bg-black text-white font-bold rounded-lg text-lg hover:bg-gray-900 hover:shadow-lg active:scale-95 transition-all;
+}
+
+.btn-secondary {
+  @apply px-5 py-3 bg-gray-700 text-white font-bold rounded-lg text-lg hover:bg-gray-600 active:scale-95 transition-all;
+}
+
+.btn-danger {
+  @apply px-5 py-3 bg-red-700 text-white font-bold rounded-lg text-lg hover:bg-red-600 active:scale-95 transition-all;
+}
+
+/* Card styling */
+.card {
+  @apply bg-gray-900 rounded-xl border-2 border-white shadow-md hover:shadow-lg transition-all;
+}
+
+.card-hover {
+  @apply bg-gray-900 hover:shadow-xl hover:border-white transition-all duration-200;
+}
+
+/* Form inputs - eye comfortable */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+textarea,
+select {
+  @apply w-full px-4 py-3 border-2 border-white rounded-lg bg-gray-800 text-white font-medium text-lg focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all;
+}
+
+input, select, textarea {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+textarea {
+  @apply resize-y font-normal;
+}
+
+/* Badges */
+.badge-success {
+  @apply inline-flex items-center px-4 py-2 rounded-full text-base font-bold text-white bg-green-700 border-2 border-green-900;
+}
+
+.badge-warning {
+  @apply inline-flex items-center px-4 py-2 rounded-full text-base font-bold text-white bg-yellow-700 border-2 border-yellow-900;
+}
+
+.badge-danger {
+  @apply inline-flex items-center px-4 py-2 rounded-full text-base font-bold text-white bg-red-700 border-2 border-red-900;
+}
+
+/* Tables - professional */
+table {
+  @apply w-full border-collapse border-2 border-black;
+}
+
+thead {
+  @apply bg-gray-950 border-b-2 border-white;
+}
+
+th {
+  @apply px-6 py-4 text-left text-lg font-bold text-white uppercase tracking-wide;
+}
+
+td {
+  @apply px-6 py-4 border-b-2 border-gray-700 text-white text-base font-medium;
+}
+
+tbody tr {
+  @apply hover:bg-gray-800 transition-colors;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Section title */
+.section-title {
+  @apply text-5xl font-black text-white mb-8;
+}
+
+.section-subtitle {
+  @apply text-white text-lg font-semibold mt-2;
+}
+
+/* Grid responsive */
+.grid-products {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8;
+}
+
+/* Status indicators */
+.status-badge {
+  @apply inline-flex items-center px-3 py-2 rounded-full text-base font-bold;
+}
+
+.status-active {
+  @apply bg-green-700 text-white border-2 border-green-900;
+}
+
+.status-draft {
+  @apply bg-gray-600 text-white border-2 border-gray-800;
+}
+
+.status-archived {
+  @apply bg-gray-600 text-white border-2 border-gray-500;
+}
+
+/* Eye-comfort palette */
+:root {
+  --primary: #000000;
+  --primary-dark: #333333;
+  --success: #22863a;
+  --warning: #cb2431;
+  --danger: #cb2431;
+}
+
+/* Alert boxes - eye comfortable */
+.alert-success {
+  @apply bg-green-100 border-2 border-green-800 text-green-900 px-4 py-3 rounded-lg font-semibold text-base;
+}
+
+.alert-warning {
+  @apply bg-yellow-100 border-2 border-yellow-800 text-yellow-900 px-4 py-3 rounded-lg font-semibold text-base;
+}
+
+.alert-error {
+  @apply bg-red-100 border-2 border-red-800 text-red-900 px-4 py-3 rounded-lg font-semibold text-base;
+}
+
+.alert-info {
+  @apply bg-blue-100 border-2 border-blue-800 text-blue-900 px-4 py-3 rounded-lg font-semibold text-base;
+}
+
+/* Professional input focus */
+input:focus, select:focus, textarea:focus {
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.2);
+}
