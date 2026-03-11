@@ -1,359 +1,545 @@
-import React, { useState } from 'react';
-import { API_BASE_URL } from '../api/config';
+import { useState } from "react";
+import { api } from "../api/api";
+import { Spin } from "../components/Icons";
 
-export default function UploadPage() {
+const UploadPage = ({ toast }) => {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [fullData, setFullData] = useState(null);
-  const [validationResult, setValidationResult] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [editedRows, setEditedRows] = useState({});
+  const [full, setFull] = useState(null);
+  const [edited, setEdited] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [results, setResults] = useState(null);
+  const [drag, setDrag] = useState(false);
+  const [step, setStep] = useState(1);
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    setFile(selectedFile);
+  const drop = (f) => {
+    setFile(f);
     setPreview(null);
-    setEditedRows({});
+    setFull(null);
+    setResults(null);
+    setStep(1);
   };
-
-  const previewFile = async () => {
-    if (!file) return;
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${API_BASE_URL}/upload/preview`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) throw new Error('Failed to preview file');
-      const data = await response.json();
-      setPreview(data);
-    } catch (err) {
-      alert(`Error: ${err.message}`);
-    }
+  const doPreview = async () => {
+    setLoading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const d = await api.upload("/upload/preview", fd);
+    if (d.columns) {
+      setPreview(d);
+      setStep(2);
+    } else toast(d.detail || "Failed", "error");
+    setLoading(false);
   };
-
-  const parseFile = async () => {
-    if (!file) return;
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${API_BASE_URL}/upload/parse`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) throw new Error('Failed to parse file');
-      const data = await response.json();
-      setFullData(data);
-      setEditedRows({});
-
-      // Validate
-      validateProducts(data.data);
-    } catch (err) {
-      alert(`Error: ${err.message}`);
-    }
+  const doParse = async () => {
+    setLoading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const d = await api.upload("/upload/parse", fd);
+    if (d.columns) {
+      setFull(d);
+      setEdited({});
+      setStep(3);
+    } else toast(d.detail || "Failed", "error");
+    setLoading(false);
   };
-
-  const validateProducts = async (products) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/upload/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(products)
-      });
-
-      if (!response.ok) throw new Error('Failed to validate');
-      const result = await response.json();
-      setValidationResult(result);
-    } catch (err) {
-      console.error('Validation error:', err);
-    }
+  const doPush = async () => {
+    if (!full || !window.confirm(`Push ${full.total_rows} rows to Shopify?`))
+      return;
+    setPushing(true);
+    const prods = full.data.map((r, i) => ({ ...r, ...edited[i] }));
+    const d = await api.post("/upload/push-to-shopify", prods);
+    setResults(d);
+    toast(`${d.success?.length || 0} products pushed!`);
+    setPushing(false);
+    setStep(4);
   };
-
-  const handleCellChange = (rowIndex, field, value) => {
-    setEditedRows(prev => ({
-      ...prev,
-      [rowIndex]: {
-        ...prev[rowIndex],
-        [field]: value
-      }
-    }));
-  };
-
-  const pushToShopify = async () => {
-    if (!fullData) return;
-
-    const productsToCreate = fullData.data.map((product, idx) => ({
-      ...product,
-      ...editedRows[idx]
-    }));
-
-    if (!window.confirm(`Push ${productsToCreate.length} products to Shopify?`)) return;
-
-    setUploading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/upload/push-to-shopify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(productsToCreate)
-      });
-
-      if (!response.ok) throw new Error('Failed to push products');
-      const result = await response.json();
-      
-      let message = `✅ Created: ${result.created}\n`;
-      if (result.skipped_count > 0) {
-        message += `⏭️  Skipped: ${result.skipped_count} (already exist)\n`;
-      }
-      if (result.errors.length > 0) {
-        message += `❌ Failed: ${result.errors.length}`;
-      }
-      
-      alert(message);
-      
-      setFile(null);
-      setPreview(null);
-      setFullData(null);
-      setEditedRows({});
-    } catch (err) {
-      alert(`Error: ${err.message}`);
-    } finally {
-      setUploading(false);
-    }
-  };
+  const steps = ["Select File", "Preview", "Edit & Review", "Done"];
 
   return (
-    <div className="min-h-screen bg-gray-900 px-3 py-6 md:px-6 md:py-10 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 w-full">
-        {/* Header */}
-        <div className="px-2 md:px-0">
-          <h1 className="section-title text-white">📤 Upload Products</h1>
-          <p className="section-subtitle text-gray-300">Import products from CSV or Excel files with automatic duplicate detection</p>
-        </div>
+    <div
+      className="fade-up"
+      style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}
+    >
+      <div style={{ marginBottom: 28 }}>
+        <h1
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 32,
+            fontWeight: 800,
+            color: "#fff",
+          }}
+        >
+          Upload Products
+        </h1>
+        <p style={{ color: "var(--text-muted)", marginTop: 4, fontSize: 15 }}>
+          Import Excel or CSV and push to Shopify
+        </p>
+      </div>
 
-        {/* File Upload Step */}
-        <div className="card card-hover p-5 md:p-8 animate-fadeIn w-full">
-          <h2 className="text-xl font-bold text-white mb-6">Step 1: Select File</h2>
-          
-          <div className="border-2 border-dashed border-white bg-gray-800 rounded-xl p-6 md:p-10 text-center">
-            <div className="text-4xl mb-4">🗂️</div>
-            <input
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={handleFileChange}
-              className="block w-full max-w-full cursor-pointer"
-            />
-            <p className="text-slate-600 mt-4 font-medium">Supported formats: CSV, XLSX, XLS</p>
-            {file && (
-              <div className="mt-4 inline-flex max-w-full items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold break-all">
-                ✓ {file.name}
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-3 md:gap-4">
-            <button
-              onClick={previewFile}
-              disabled={!file}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              👁️ Preview Data
-            </button>
-            <button
-              onClick={parseFile}
-              disabled={!file}
-              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              🔍 Parse Full Data
-            </button>
-          </div>
-        </div>
-
-        {/* Preview Step */}
-        {preview && !fullData && (
-          <div className="card card-hover p-5 md:p-8 animate-fadeIn w-full">
-            <h2 className="text-xl font-bold text-white mb-4">Step 2: Preview</h2>
-            <p className="text-gray-300 mb-4">
-              📊 Total rows: <span className="font-bold text-white">{preview.total_rows}</span>
-            </p>
-            <div className="max-w-full overflow-x-auto rounded-lg border border-white">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-950 border-b border-white">
-                    {preview.columns.map(col => (
-                      <th key={col} className="px-6 py-3 text-left text-sm font-semibold text-white">
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.preview.map((row, idx) => (
-                    <tr key={idx} className="border-b border-gray-700 hover:bg-gray-800 transition-colors">
-                      {preview.columns.map(col => (
-                        <td key={col} className="px-6 py-3 text-sm text-white">
-                          {row[col] || <span className="text-gray-500">-</span>}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Full Data with Validation & Push */}
-        {fullData && (
-          <div className="card card-hover p-5 md:p-8 animate-fadeIn w-full">
-            <h2 className="text-xl font-bold text-white mb-6">Step 3: Review & Push</h2>
-            
-            {/* Validation Results */}
-            {validationResult && (
-              <div className="mb-8 rounded-xl border border-gray-700 bg-gray-950/70 p-4 md:p-6 space-y-3">
-                {/* Main Validation Status */}
-                <div className={`p-4 rounded-lg font-semibold ${
-                  validationResult.valid 
-                    ? 'bg-green-900 text-green-100 border border-green-700' 
-                    : 'bg-yellow-900 text-yellow-100 border border-yellow-700'
-                }`}>
-                  {validationResult.valid ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">✅</span>
-                      <span>All {validationResult.valid_products} products are valid</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">⚠️</span>
-                      <span>Found {validationResult.error_count} errors and {validationResult.duplicate_count} duplicates</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Validation Errors */}
-                {validationResult.errors && validationResult.errors.length > 0 && (
-                  <div className="bg-red-900 border-2 border-red-700 rounded-lg p-4">
-                    <div className="font-bold text-red-100 mb-3 flex items-center gap-2">
-                      <span>❌</span> Validation Errors
-                    </div>
-                    <div className="space-y-2">
-                      {validationResult.errors.map((err, idx) => (
-                        <div key={idx} className="text-sm text-red-100 ml-6">
-                          <span className="font-semibold">Row {err.row}:</span> {err.message}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* File Duplicates */}
-                {validationResult.duplicates && validationResult.duplicates.length > 0 && (
-                  <div className="bg-orange-900 border-2 border-orange-700 rounded-lg p-4">
-                    <div className="font-bold text-orange-100 mb-3 flex items-center gap-2">
-                      <span>🔄</span> Duplicates in File
-                    </div>
-                    <div className="space-y-2">
-                      {validationResult.duplicates.map((dup, idx) => (
-                        <div key={idx} className="text-sm text-orange-100 ml-6">
-                          <span className="font-semibold">Row {dup.row}:</span> "{dup.title}" - {dup.reason}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Existing Shopify Products */}
-                {validationResult.existing_duplicates && validationResult.existing_duplicates.length > 0 && (
-                  <div className="bg-blue-900 border-2 border-blue-700 rounded-lg p-4">
-                    <div className="font-bold text-blue-100 mb-3 flex items-center gap-2">
-                      <span>⏭️</span> Already in Shopify (will be skipped)
-                    </div>
-                    <div className="space-y-2">
-                      {validationResult.existing_duplicates.map((dup, idx) => (
-                        <div key={idx} className="text-sm text-blue-100 ml-6">
-                          <span className="font-semibold">Row {dup.row}:</span> "{dup.title}" {dup.sku && `(SKU: ${dup.sku})`} - {dup.reason}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Data Table */}
-            <div className="mb-6 rounded-xl border border-gray-700 bg-gray-950/70 p-3 md:p-5 w-full">
-              <h3 className="text-lg font-bold text-white mb-4">Product Data (Showing {fullData.data.length} rows)</h3>
-              <div className="max-w-full overflow-x-auto overflow-y-auto max-h-[28rem] rounded-lg border border-slate-600">
-                <table className="min-w-[900px] w-full">
-                  <thead>
-                    <tr className="bg-slate-100 border-b border-slate-200">
-                      {fullData.columns.map(col => (
-                        <th key={col} className="px-4 py-3 text-left text-sm font-semibold text-slate-700 whitespace-nowrap">
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fullData.data.map((row, rowIdx) => (
-                      <tr key={rowIdx} className="border-b border-slate-100 hover:bg-blue-50 transition-colors">
-                        {fullData.columns.map(col => (
-                          <td key={`${rowIdx}-${col}`} className="px-4 py-2">
-                            <input
-                              type="text"
-                              value={editedRows[rowIdx]?.[col] ?? row[col] ?? ''}
-                              onChange={(e) =>
-                                handleCellChange(rowIdx, col, e.target.value)
-                              }
-                              className="w-full min-w-[140px] px-3 py-2 border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3 md:gap-4 pt-6 border-t border-slate-700">
-              <button
-                onClick={pushToShopify}
-                disabled={uploading}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {uploading ? (
-                  <>
-                    <span className="animate-spin">⏳</span> Pushing...
-                  </>
-                ) : (
-                  <>
-                    <span>🚀</span> Push to Shopify
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setFile(null);
-                  setFullData(null);
-                  setPreview(null);
-                  setValidationResult(null);
+      {/* Stepper */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          marginBottom: 32,
+          gap: 0,
+        }}
+      >
+        {steps.map((s, i) => (
+          <div
+            key={s}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              flex: i < steps.length - 1 ? 1 : "none",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background:
+                    step > i + 1
+                      ? "var(--accent)"
+                      : step === i + 1
+                        ? "var(--accent-gradient)"
+                        : "var(--bg-card)",
+                  border: `2px solid ${step >= i + 1 ? "var(--accent)" : "var(--border-light)"}`,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: step >= i + 1 ? "#fff" : "var(--text-muted)",
+                  transition: "var(--transition)",
                 }}
-                className="btn-secondary"
               >
-                ✕ Cancel
-              </button>
+                {step > i + 1 ? "✓" : i + 1}
+              </div>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color:
+                    step === i + 1
+                      ? "var(--accent)"
+                      : step > i + 1
+                        ? "var(--text-primary)"
+                        : "var(--text-muted)",
+                }}
+              >
+                {s}
+              </span>
             </div>
+            {i < steps.length - 1 && (
+              <div
+                style={{
+                  flex: 1,
+                  height: 2,
+                  background:
+                    step > i + 1 ? "var(--accent)" : "var(--border-color)",
+                  margin: "0 12px",
+                  transition: "background 0.3s",
+                }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Dropzone */}
+      <div
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-color)",
+          borderRadius: 24,
+          padding: 28,
+          marginBottom: 20,
+        }}
+      >
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDrag(true);
+          }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDrag(false);
+            const f = e.dataTransfer.files[0];
+            if (f) drop(f);
+          }}
+          onClick={() => document.getElementById("fileInput").click()}
+          style={{
+            border: `2px dashed ${drag ? "var(--accent)" : file ? "var(--success)" : "var(--border-light)"}`,
+            borderRadius: 16,
+            padding: "48px 24px",
+            textAlign: "center",
+            cursor: "pointer",
+            background: drag
+              ? "rgba(99,102,241,0.05)"
+              : file
+                ? "rgba(16,185,129,0.05)"
+                : "transparent",
+            transition: "var(--transition)",
+          }}
+        >
+          <input
+            id="fileInput"
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            style={{ display: "none" }}
+            onChange={(e) => e.target.files[0] && drop(e.target.files[0])}
+          />
+          <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+          <p
+            style={{
+              fontSize: 16,
+              fontWeight: 600,
+              color: file ? "var(--success)" : "var(--text-primary)",
+              marginBottom: 4,
+            }}
+          >
+            {file ? `✓ ${file.name}` : "Drop file here or click to browse"}
+          </p>
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            Supports .xlsx, .xls, .csv
+          </p>
+        </div>
+        {file && (
+          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+            <button
+              onClick={doPreview}
+              disabled={loading}
+              className="btn btn-secondary"
+              style={{ flex: 1, padding: "12px" }}
+            >
+              {loading && step === 1 ? <Spin size={16} /> : null} Preview (10
+              rows)
+            </button>
+            <button
+              onClick={doParse}
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ flex: 1, padding: "12px" }}
+            >
+              {loading ? <Spin size={16} /> : null} Parse Full Data
+            </button>
           </div>
         )}
       </div>
+
+      {/* Preview */}
+      {preview && !full && (
+        <div
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
+            borderRadius: 24,
+            padding: 24,
+            marginBottom: 20,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 16,
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#fff",
+              }}
+            >
+              Preview
+            </h3>
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+              {preview.total_rows} rows · first 10 shown
+            </span>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: 13,
+              }}
+            >
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
+                  {preview.columns.map((c) => (
+                    <th
+                      key={c}
+                      style={{
+                        padding: "10px 12px",
+                        textAlign: "left",
+                        color: "var(--text-muted)",
+                        fontWeight: 600,
+                        fontSize: 11,
+                        textTransform: "uppercase",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {c}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(preview.preview || preview.data || []).map((row, i) => (
+                  <tr
+                    key={i}
+                    style={{ borderBottom: "1px solid var(--border-color)" }}
+                  >
+                    {preview.columns.map((c) => (
+                      <td
+                        key={c}
+                        style={{
+                          padding: "10px 12px",
+                          color: "var(--text-secondary)",
+                          maxWidth: 160,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {String(row[c] || "")}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Edit & Review */}
+      {full && !results && (
+        <div
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-color)",
+            borderRadius: 24,
+            padding: 24,
+            marginBottom: 20,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 16,
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#fff",
+              }}
+            >
+              Edit & Review
+            </h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                {full.total_rows} rows
+              </span>
+              <button
+                onClick={doPush}
+                disabled={pushing}
+                className="btn btn-primary"
+                style={{ padding: "10px 18px" }}
+              >
+                {pushing ? (
+                  <>
+                    <Spin size={16} /> Pushing...
+                  </>
+                ) : (
+                  "🚀 Push to Shopify"
+                )}
+              </button>
+            </div>
+          </div>
+          <div
+            style={{
+              overflowX: "auto",
+              maxHeight: 500,
+              overflowY: "auto",
+              border: "1px solid var(--border-color)",
+              borderRadius: 12,
+            }}
+          >
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: 12,
+              }}
+            >
+              <thead
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  background: "var(--bg-card)",
+                  zIndex: 1,
+                }}
+              >
+                <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
+                  <th
+                    style={{
+                      padding: "10px 12px",
+                      color: "var(--text-muted)",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    #
+                  </th>
+                  {full.columns.map((c) => (
+                    <th
+                      key={c}
+                      style={{
+                        padding: "10px 12px",
+                        textAlign: "left",
+                        color: "var(--text-muted)",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {c}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {full.data.map((row, ri) => (
+                  <tr
+                    key={ri}
+                    style={{ borderBottom: "1px solid var(--border-color)" }}
+                  >
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        color: "var(--text-muted)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {ri + 1}
+                    </td>
+                    {full.columns.map((c) => (
+                      <td key={c} style={{ padding: "4px 8px" }}>
+                        <input
+                          value={edited[ri]?.[c] ?? String(row[c] || "")}
+                          onChange={(e) =>
+                            setEdited((p) => ({
+                              ...p,
+                              [ri]: { ...p[ri], [c]: e.target.value },
+                            }))
+                          }
+                          className="field-input"
+                          style={{
+                            padding: "6px 8px",
+                            fontSize: 11,
+                            minWidth: 80,
+                          }}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      {results && (
+        <div
+          className="fade-up"
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}
+        >
+          <div
+            style={{
+              background: "rgba(16,185,129,0.08)",
+              border: "1px solid rgba(16,185,129,0.2)",
+              borderRadius: 20,
+              padding: 28,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 42,
+                fontWeight: 800,
+                color: "var(--success)",
+                fontFamily: "'Syne', sans-serif",
+                lineHeight: 1,
+              }}
+            >
+              {results.success?.length}
+            </div>
+            <div
+              style={{ fontSize: 15, color: "var(--success)", marginTop: 6 }}
+            >
+              Created successfully
+            </div>
+          </div>
+          <div
+            style={{
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.2)",
+              borderRadius: 20,
+              padding: 28,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 42,
+                fontWeight: 800,
+                color: "var(--danger)",
+                fontFamily: "'Syne', sans-serif",
+                lineHeight: 1,
+              }}
+            >
+              {results.errors?.length}
+            </div>
+            <div style={{ fontSize: 15, color: "var(--danger)", marginTop: 6 }}>
+              Failed
+            </div>
+          </div>
+          <div style={{ gridColumn: "1/-1" }}>
+            <button
+              onClick={() => {
+                setFile(null);
+                setPreview(null);
+                setFull(null);
+                setResults(null);
+                setStep(1);
+              }}
+              className="btn btn-primary"
+              style={{ padding: "14px 24px", fontSize: 15 }}
+            >
+              Upload Another
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default UploadPage;
