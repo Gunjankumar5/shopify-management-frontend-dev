@@ -386,6 +386,76 @@ const GlobalStyles = () => (
       opacity: 1;
     }
 
+    /* App shell layout */
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      background: var(--bg-primary);
+      overflow-x: hidden;
+    }
+    .app-main {
+      flex: 1;
+      margin-left: 220px;
+      width: calc(100vw - 220px);
+      min-height: 100vh;
+      padding: var(--space-8) 0;
+    }
+    .app-sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      border: 0;
+      z-index: 1300;
+      cursor: pointer;
+    }
+    .app-mobile-header {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      background: rgba(18, 18, 20, 0.82);
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(8px);
+    }
+    .app-mobile-header h1 {
+      font-size: var(--text-lg);
+      font-family: var(--font-display);
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .app-mobile-menu-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color var(--transition-fast), background var(--transition-fast);
+    }
+    .app-mobile-menu-btn:hover {
+      background: var(--bg-elevated);
+      border-color: var(--accent);
+    }
+
+    @media (max-width: 1024px) {
+      .app-main {
+        margin-left: 0;
+        width: 100vw;
+        padding: 0 0 var(--space-6);
+      }
+      .app-sidebar {
+        z-index: 1400;
+      }
+    }
+
     /* Card styles */
     .card {
       background: var(--bg-card);

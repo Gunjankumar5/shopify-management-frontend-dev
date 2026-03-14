@@ -2,6 +2,18 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
 
+function useViewportWidth() {
+  const [width, setWidth] = useState(() => window.innerWidth);
+
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return width;
+}
+
 // ── Design tokens ─────────────────────────────────────────────────────────
 const C = {
   card: "#1A1A1A",
@@ -425,7 +437,14 @@ function CollectionImageCard({ imageUrl, imageFile, onFileChange, onRemove }) {
                 display: "block",
               }}
             />
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: 10,
+                flexWrap: "wrap",
+              }}
+            >
               <Btn
                 onClick={() => inputRef.current?.click()}
                 variant="secondary"
@@ -566,7 +585,7 @@ const newCond = () => ({
   value: "",
 });
 
-function ConditionRow({ cond, onChange, onRemove, isOnly }) {
+function ConditionRow({ cond, onChange, onRemove, isOnly, compact }) {
   const isNum = NUMERIC_FIELDS.has(cond.field);
   const ops = isNum ? NUM_OPS : TEXT_OPS;
   const [focused, setFocused] = useState(false);
@@ -575,7 +594,7 @@ function ConditionRow({ cond, onChange, onRemove, isOnly }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr 36px",
+        gridTemplateColumns: compact ? "1fr" : "1fr 1fr 1fr 36px",
         gap: 8,
         alignItems: "center",
         marginBottom: 10,
@@ -707,7 +726,7 @@ function ConditionRow({ cond, onChange, onRemove, isOnly }) {
         onClick={onRemove}
         disabled={isOnly}
         style={{
-          width: 36,
+          width: compact ? "100%" : 36,
           height: 36,
           border: `1px solid ${C.border}`,
           background: "transparent",
@@ -926,6 +945,9 @@ function ProductsList({ products }) {
 // ── Main AddCollectionPage ─────────────────────────────────────────────────
 export default function AddCollectionPage({ toast, onBack, editCollection }) {
   const isEdit = !!editCollection;
+  const viewportWidth = useViewportWidth();
+  const isTabletOrBelow = viewportWidth <= 1024;
+  const isPhone = viewportWidth <= 640;
 
   const [title, setTitle] = useState(editCollection?.title || "");
   const [status, setStatus] = useState(
@@ -1049,7 +1071,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
       style={{
         maxWidth: 1100,
         margin: "0 auto",
-        padding: "0 32px 100px",
+        padding: isPhone ? "0 14px 120px" : "0 24px 120px",
         fontFamily: "inherit",
       }}
     >
@@ -1059,6 +1081,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
           display: "flex",
           alignItems: "center",
           gap: 6,
+          flexWrap: "wrap",
           fontSize: 12,
           color: C.muted,
           marginBottom: 14,
@@ -1089,16 +1112,24 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
       <div
         style={{
           display: "flex",
-          alignItems: "center",
+          alignItems: isPhone ? "flex-start" : "center",
           justifyContent: "space-between",
           marginBottom: 20,
           gap: 12,
+          flexWrap: "wrap",
         }}
       >
         <h1 style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>
           {isEdit ? title || "Edit collection" : "Add collection"}
         </h1>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            width: isPhone ? "100%" : "auto",
+          }}
+        >
           <Btn onClick={onBack} variant="secondary">
             Discard
           </Btn>
@@ -1131,7 +1162,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 270px",
+          gridTemplateColumns: isTabletOrBelow ? "1fr" : "1fr 270px",
           gap: 16,
           alignItems: "start",
         }}
@@ -1167,6 +1198,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 16,
+                    flexWrap: "wrap",
                     marginBottom: 16,
                     fontSize: 13,
                   }}
@@ -1203,6 +1235,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
                   <ConditionRow
                     key={c._id}
                     cond={c}
+                    compact={isPhone}
                     onChange={(f, v) => updateCond(c._id, f, v)}
                     onRemove={() =>
                       setConditions((prev) => {
@@ -1386,14 +1419,16 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
         style={{
           position: "fixed",
           bottom: 0,
-          left: 220,
+          left: isTabletOrBelow ? 0 : 220,
           right: 0,
           background: "#0d0d0d",
           borderTop: `1px solid ${C.border}`,
-          padding: "12px 32px",
+          padding: isPhone ? "10px 12px" : "12px 24px",
           display: "flex",
-          alignItems: "center",
+          alignItems: isPhone ? "stretch" : "center",
+          flexDirection: isPhone ? "column" : "row",
           justifyContent: "space-between",
+          gap: isPhone ? 8 : 0,
           zIndex: 200,
         }}
       >
@@ -1404,11 +1439,18 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
               ? "Unsaved changes"
               : "Unsaved collection"}
         </span>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div
+          style={{ display: "flex", gap: 8, width: isPhone ? "100%" : "auto" }}
+        >
           <Btn onClick={onBack} variant="secondary">
             Discard
           </Btn>
-          <Btn onClick={handleSave} disabled={saving} variant="primary">
+          <Btn
+            onClick={handleSave}
+            disabled={saving}
+            variant="primary"
+            style={isPhone ? { flex: 1, justifyContent: "center" } : {}}
+          >
             {saving ? (
               <>
                 <Spin size={14} /> Saving…

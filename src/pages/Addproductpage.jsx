@@ -2,6 +2,18 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
 
+function useViewportWidth() {
+  const [width, setWidth] = useState(() => window.innerWidth);
+
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return width;
+}
+
 // ── Shared style tokens matching existing app dark theme ──────────────────
 const C = {
   bg: "#0A0A0A",
@@ -624,12 +636,12 @@ function TagInput({ tags, setTags }) {
 }
 
 // ── Variants ───────────────────────────────────────────────────────────────
-function VariantRow({ v, onChange, onRemove, isOnly }) {
+function VariantRow({ v, onChange, onRemove, isOnly, compact }) {
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 110px 110px 36px",
+        gridTemplateColumns: compact ? "1fr" : "1fr 110px 110px 36px",
         gap: 8,
         alignItems: "center",
         padding: "10px 0",
@@ -658,7 +670,7 @@ function VariantRow({ v, onChange, onRemove, isOnly }) {
         onClick={onRemove}
         disabled={isOnly}
         style={{
-          width: 32,
+          width: compact ? "100%" : 32,
           height: 32,
           border: `1px solid ${C.border}`,
           background: "transparent",
@@ -833,6 +845,9 @@ function newVariant(name = "", price = "", sku = "") {
 
 export default function AddProductPage({ toast, onBack, editProduct }) {
   const isEdit = !!editProduct;
+  const viewportWidth = useViewportWidth();
+  const isTabletOrBelow = viewportWidth <= 1024;
+  const isPhone = viewportWidth <= 640;
 
   // Form state
   const [title, setTitle] = useState(editProduct?.title || "");
@@ -924,7 +939,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
       style={{
         maxWidth: 1100,
         margin: "0 auto",
-        padding: "0 32px 100px",
+        padding: isPhone ? "0 14px 120px" : "0 24px 120px",
         fontFamily: "inherit",
       }}
     >
@@ -934,6 +949,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
           display: "flex",
           alignItems: "center",
           gap: 6,
+          flexWrap: "wrap",
           fontSize: 12,
           color: C.muted,
           marginBottom: 14,
@@ -964,16 +980,24 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
       <div
         style={{
           display: "flex",
-          alignItems: "center",
+          alignItems: isPhone ? "flex-start" : "center",
           justifyContent: "space-between",
           marginBottom: 20,
           gap: 12,
+          flexWrap: "wrap",
         }}
       >
         <h1 style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>
           {isEdit ? "Edit product" : "Add product"}
         </h1>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            width: isPhone ? "100%" : "auto",
+          }}
+        >
           <Btn onClick={onBack} variant="secondary">
             Discard
           </Btn>
@@ -996,7 +1020,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 270px",
+          gridTemplateColumns: isTabletOrBelow ? "1fr" : "1fr 270px",
           gap: 16,
           alignItems: "start",
         }}
@@ -1034,7 +1058,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
                   gap: 12,
                 }}
               >
@@ -1094,7 +1118,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
                   gap: 12,
                 }}
               >
@@ -1137,7 +1161,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 1fr",
                   gap: 12,
                 }}
               >
@@ -1196,7 +1220,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 100px",
+                      gridTemplateColumns: isPhone ? "1fr" : "1fr 100px",
                       gap: 12,
                       alignItems: "end",
                     }}
@@ -1326,7 +1350,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 110px 110px 36px",
+                  gridTemplateColumns: isPhone ? "1fr" : "1fr 110px 110px 36px",
                   gap: 8,
                   paddingBottom: 8,
                   borderBottom: `1px solid ${C.border}`,
@@ -1351,6 +1375,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
                 <VariantRow
                   key={v._id}
                   v={v}
+                  compact={isPhone}
                   onChange={(f, val) => updateVariant(v._id, f, val)}
                   onRemove={() =>
                     setVariants((p) => p.filter((x) => x._id !== v._id))
@@ -1481,25 +1506,34 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
         style={{
           position: "fixed",
           bottom: 0,
-          left: 220,
+          left: isTabletOrBelow ? 0 : 220,
           right: 0,
           background: "#0d0d0d",
           borderTop: `1px solid ${C.border}`,
-          padding: "12px 32px",
+          padding: isPhone ? "10px 12px" : "12px 24px",
           display: "flex",
-          alignItems: "center",
+          alignItems: isPhone ? "stretch" : "center",
+          flexDirection: isPhone ? "column" : "row",
           justifyContent: "space-between",
+          gap: isPhone ? 8 : 0,
           zIndex: 200,
         }}
       >
         <span style={{ fontSize: 13, color: C.muted }}>
           {saving ? "Saving…" : isEdit ? "Unsaved changes" : "Unsaved product"}
         </span>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div
+          style={{ display: "flex", gap: 8, width: isPhone ? "100%" : "auto" }}
+        >
           <Btn onClick={onBack} variant="secondary">
             Discard
           </Btn>
-          <Btn onClick={handleSave} disabled={saving} variant="primary">
+          <Btn
+            onClick={handleSave}
+            disabled={saving}
+            variant="primary"
+            style={isPhone ? { flex: 1, justifyContent: "center" } : {}}
+          >
             {saving ? (
               <>
                 <Spin size={14} /> Saving…

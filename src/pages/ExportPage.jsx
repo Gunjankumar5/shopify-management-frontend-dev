@@ -9,6 +9,18 @@ const HOT_JS =
   "https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js";
 const XLSX_JS = "https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js";
 
+function useViewportWidth() {
+  const [width, setWidth] = useState(() => window.innerWidth);
+
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return width;
+}
+
 function loadScript(src) {
   return new Promise((res, rej) => {
     if (document.querySelector(`script[src="${src}"]`)) return res();
@@ -57,7 +69,7 @@ const LOAD_STEPS = [
 ];
 
 // ─── Loading overlay (redesigned with global tokens) ─────────────────────────
-function LoadingOverlay({ step, elapsed }) {
+function LoadingOverlay({ step, elapsed, isMobile }) {
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   return (
     <div
@@ -74,7 +86,11 @@ function LoadingOverlay({ step, elapsed }) {
     >
       <div
         className="card"
-        style={{ minWidth: 320, padding: "var(--space-6)" }}
+        style={{
+          minWidth: isMobile ? "min(92vw, 320px)" : 320,
+          width: isMobile ? "92vw" : "auto",
+          padding: "var(--space-6)",
+        }}
       >
         <div className="flex justify-between items-center mb-4">
           <span
@@ -132,7 +148,7 @@ function LoadingOverlay({ step, elapsed }) {
 }
 
 // ─── Sync progress bar (redesigned) ───────────────────────────────────────────
-function SyncProgressBar({ syncState, totalRows }) {
+function SyncProgressBar({ syncState, totalRows, isMobile }) {
   if (!syncState) return null;
   const { results = {}, summary } = syncState;
   const done = Object.keys(results).length;
@@ -161,9 +177,18 @@ function SyncProgressBar({ syncState, totalRows }) {
   return (
     <div
       className="flex items-center gap-3 px-4 py-1 border-b border-strong"
-      style={{ background: "var(--bg-secondary)", height: 32 }}
+      style={{
+        background: "var(--bg-secondary)",
+        minHeight: 32,
+        flexWrap: isMobile ? "wrap" : "nowrap",
+        paddingTop: isMobile ? 6 : undefined,
+        paddingBottom: isMobile ? 6 : undefined,
+      }}
     >
-      <div className="w-40 h-1 bg-secondary rounded-full overflow-hidden">
+      <div
+        className="h-1 bg-secondary rounded-full overflow-hidden"
+        style={{ width: isMobile ? "100%" : 160 }}
+      >
         <div
           className="h-full bg-success transition-all duration-300"
           style={{ width: summary ? "100%" : `${pct}%` }}
@@ -241,6 +266,8 @@ function SyncProgressBar({ syncState, totalRows }) {
 
 // ─── Main ExportPage ──────────────────────────────────────────────────────────
 const ExportPage = ({ toast }) => {
+  const viewportWidth = useViewportWidth();
+  const isMobile = viewportWidth <= 768;
   const containerRef = useRef(null);
   const hotRef = useRef(null);
   const rowsRef = useRef([]);
@@ -694,16 +721,22 @@ const ExportPage = ({ toast }) => {
   }, [syncing, toast]);
 
   return (
-    <div className="flex flex-col h-screen bg-primary font-mono">
+    <div
+      className="flex flex-col bg-primary font-mono"
+      style={{ height: "100dvh" }}
+    >
       {/* Topbar */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-secondary border-b border-strong flex-shrink-0">
+      <div
+        className="flex items-center gap-3 px-4 py-2 bg-secondary border-b border-strong flex-shrink-0"
+        style={{ flexWrap: isMobile ? "wrap" : "nowrap", rowGap: 8 }}
+      >
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-warning shadow-glow" />
           <span className="text-xs font-bold tracking-wider text-warning uppercase">
             PRODUCTS
           </span>
         </div>
-        <div className="w-px h-6 bg-strong" />
+        {!isMobile && <div className="w-px h-6 bg-strong" />}
 
         <button
           onClick={loadFromShopify}
@@ -745,11 +778,12 @@ const ExportPage = ({ toast }) => {
             className={`text-xs ${
               importLabel.startsWith("✓") ? "text-success" : "text-muted"
             }`}
+            style={{ width: isMobile ? "100%" : "auto" }}
           >
             {importLabel}
           </span>
         )}
-        <div className="w-px h-6 bg-strong" />
+        {!isMobile && <div className="w-px h-6 bg-strong" />}
 
         {hasData && (
           <>
@@ -783,7 +817,7 @@ const ExportPage = ({ toast }) => {
           </>
         )}
 
-        <div className="flex-1" />
+        {!isMobile && <div className="flex-1" />}
         {changedCount > 0 && (
           <span className="badge badge-warning text-xs">
             {changedCount} unsaved
@@ -795,7 +829,7 @@ const ExportPage = ({ toast }) => {
             <span className="text-xs text-muted tracking-wider">ROWS</span>
           </div>
         )}
-        <div className="w-px h-6 bg-strong" />
+        {!isMobile && <div className="w-px h-6 bg-strong" />}
         <button
           onClick={exportXlsx}
           disabled={!hasData}
@@ -815,11 +849,21 @@ const ExportPage = ({ toast }) => {
         )}
       </div>
 
-      <SyncProgressBar syncState={syncState} totalRows={rowCount} />
+      <SyncProgressBar
+        syncState={syncState}
+        totalRows={rowCount}
+        isMobile={isMobile}
+      />
 
       {/* Grid Container */}
       <div className="relative flex-1 min-h-0 overflow-hidden">
-        {loading && <LoadingOverlay step={loadStep} elapsed={elapsed} />}
+        {loading && (
+          <LoadingOverlay
+            step={loadStep}
+            elapsed={elapsed}
+            isMobile={isMobile}
+          />
+        )}
         {!hasData && !loading && (
           <div className="flex flex-col items-center justify-center h-full gap-4">
             <Ico n="grid" size={48} className="text-muted opacity-25" />
@@ -827,7 +871,10 @@ const ExportPage = ({ toast }) => {
             <div className="text-xs text-muted">
               Click FETCH to pull products from Shopify
             </div>
-            <div className="flex gap-3 mt-2">
+            <div
+              className="flex gap-3 mt-2"
+              style={{ flexWrap: "wrap", justifyContent: "center" }}
+            >
               <button
                 onClick={loadFromShopify}
                 disabled={!libsReady}

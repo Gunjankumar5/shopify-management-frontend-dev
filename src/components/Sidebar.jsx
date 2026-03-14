@@ -12,10 +12,11 @@ const colors = {
   accentGradient: "linear-gradient(135deg, #3B82F6, #8B5CF6)",
 };
 
-const Sidebar = ({ page, setPage }) => (
+const Sidebar = ({ page, setPage, isMobile, isOpen, onClose }) => (
   <aside
+    className="app-sidebar"
     style={{
-      width: 220,
+      width: 260,
       background: colors.bgSecondary,
       borderRight: `1px solid ${colors.border}`,
       display: "flex",
@@ -24,7 +25,9 @@ const Sidebar = ({ page, setPage }) => (
       position: "fixed",
       left: 0,
       top: 0,
-      zIndex: 100,
+      zIndex: 1400,
+      transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
+      transition: "transform 180ms ease",
     }}
   >
     {/* Header with logo */}
@@ -34,36 +37,67 @@ const Sidebar = ({ page, setPage }) => (
         borderBottom: `1px solid ${colors.border}`,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 8,
-            background: colors.accentGradient,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 20,
-          }}
-        >
-          🛍️
-        </div>
-        <div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div
             style={{
-              fontFamily: "'Syne', sans-serif",
-              fontSize: 16,
-              fontWeight: 800,
-              color: colors.textPrimary,
+              width: 40,
+              height: 40,
+              borderRadius: 8,
+              background: colors.accentGradient,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 20,
             }}
           >
-            ShopManager
+            🛍️
           </div>
-          <div style={{ fontSize: 11, color: colors.textMuted }}>
-            Shopify Control
+          <div>
+            <div
+              style={{
+                fontFamily: "'Syne', sans-serif",
+                fontSize: 16,
+                fontWeight: 800,
+                color: colors.textPrimary,
+              }}
+            >
+              ShopManager
+            </div>
+            <div style={{ fontSize: 11, color: colors.textMuted }}>
+              Shopify Control
+            </div>
           </div>
         </div>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close sidebar"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 8,
+              border: `1px solid ${colors.border}`,
+              background: colors.bgCard,
+              color: colors.textMuted,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            <Ico n="x" size={16} />
+          </button>
+        )}
       </div>
     </div>
 
@@ -86,7 +120,10 @@ const Sidebar = ({ page, setPage }) => (
       ].map(({ id, label, icon }) => (
         <button
           key={id}
-          onClick={() => setPage(id)}
+          onClick={() => {
+            setPage(id);
+            onClose?.();
+          }}
           style={{
             width: "100%",
             display: "flex",
