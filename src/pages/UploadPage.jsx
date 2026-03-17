@@ -22,37 +22,52 @@ const UploadPage = ({ toast }) => {
   };
   const doPreview = async () => {
     setLoading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const d = await api.upload("/upload/preview", fd);
-    if (d.columns) {
-      setPreview(d);
-      setStep(2);
-    } else toast(d.detail || "Failed", "error");
-    setLoading(false);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const d = await api.upload("/upload/preview", fd);
+      if (d.columns) {
+        setPreview(d);
+        setStep(2);
+      } else toast(d.detail || "Failed", "error");
+    } catch (err) {
+      toast(err.message || "Preview failed", "error");
+    } finally {
+      setLoading(false);
+    }
   };
   const doParse = async () => {
     setLoading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const d = await api.upload("/upload/parse", fd);
-    if (d.columns) {
-      setFull(d);
-      setEdited({});
-      setStep(3);
-    } else toast(d.detail || "Failed", "error");
-    setLoading(false);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const d = await api.upload("/upload/parse", fd);
+      if (d.columns) {
+        setFull(d);
+        setEdited({});
+        setStep(3);
+      } else toast(d.detail || "Failed", "error");
+    } catch (err) {
+      toast(err.message || "Parse failed", "error");
+    } finally {
+      setLoading(false);
+    }
   };
   const doPush = async () => {
     if (!full || !window.confirm(`Push ${full.total_rows} rows to Shopify?`))
       return;
     setPushing(true);
-    const prods = full.data.map((r, i) => ({ ...r, ...edited[i] }));
-    const d = await api.post("/upload/push-to-shopify", prods);
-    setResults(d);
-    toast(`${d.success?.length || 0} products pushed!`);
-    setPushing(false);
-    setStep(4);
+    try {
+      const prods = full.data.map((r, i) => ({ ...r, ...edited[i] }));
+      const d = await api.post("/upload/push-to-shopify", prods);
+      setResults(d);
+      toast(`${d.success?.length || 0} products pushed!`);
+      setStep(4);
+    } catch (err) {
+      toast(err.message || "Push failed", "error");
+    } finally {
+      setPushing(false);
+    }
   };
   const steps = ["Select File", "Preview", "Edit & Review", "Done"];
 

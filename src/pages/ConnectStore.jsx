@@ -1,7 +1,17 @@
 import { useMemo, useState } from "react";
 
-const API = import.meta.env.VITE_API_ORIGIN
-  ? `${import.meta.env.VITE_API_ORIGIN.trim().replace(/\/$/, "")}/api`
+const rawApiOrigin = (import.meta.env.VITE_API_ORIGIN || "")
+  .trim()
+  .replace(/\/$/, "");
+
+const normalizedApiOrigin = rawApiOrigin
+  ? /^https?:\/\//i.test(rawApiOrigin)
+    ? rawApiOrigin
+    : `https://${rawApiOrigin}`
+  : "";
+
+const API = normalizedApiOrigin
+  ? `${normalizedApiOrigin}/api`
   : "http://127.0.0.1:8000/api";
 
 // Spinner component (unchanged but kept for completeness)

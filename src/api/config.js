@@ -1,6 +1,12 @@
-const origin = (import.meta.env.VITE_API_ORIGIN || "")
+const rawOrigin = (import.meta.env.VITE_API_ORIGIN || "")
   .trim()
   .replace(/\/$/, "");
+
+const origin = rawOrigin
+  ? /^https?:\/\//i.test(rawOrigin)
+    ? rawOrigin
+    : `https://${rawOrigin}`
+  : "";
 
 export const API_ORIGIN = origin || "http://127.0.0.1:8000";
 export const API_BASE_URL = `${API_ORIGIN}/api`;
