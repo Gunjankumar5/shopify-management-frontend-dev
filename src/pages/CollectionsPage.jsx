@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Ico, Spin } from "../components/Icons";
-import AddCollectionPage from "./Addcollectionpage";
+import AddCollectionPage from "./AddcollectionPage";
 
 export default function CollectionsPage({ toast }) {
   const [collections, setCollections] = useState([]);
