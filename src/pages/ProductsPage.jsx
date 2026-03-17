@@ -4,7 +4,7 @@ import { Ico, Spin } from "../components/Icons";
 import { Badge } from "../components/UI";
 import { PriceModal } from "../components/Modals";
 import ProductCard from "../components/ProductCard";
-import AddProductPage from "./AddProductPage";
+import AddProductPage from "./Addproductpage";
 
 const ProductsPage = ({ toast }) => {
   const [products, setProducts] = useState([]);
