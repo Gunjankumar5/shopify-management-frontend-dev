@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
+import { PageLoadingOverlay } from "../components/UI";
 
 function useViewportWidth() {
   const [width, setWidth] = useState(() => window.innerWidth);
@@ -297,6 +298,112 @@ function Btn({ children, onClick, disabled, variant = "secondary", style: s }) {
     >
       {children}
     </button>
+  );
+}
+
+function CollectionTypeSwitch({ value, onChange, disabled }) {
+  const isSmart = value === "smart";
+
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 10,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>
+            {isSmart ? "Smart collection" : "Manual collection"}
+          </div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>
+            {isSmart
+              ? "Products are included automatically from the rules below."
+              : "Products are managed manually in Shopify."}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange(isSmart ? "custom" : "smart")}
+          disabled={disabled}
+          aria-pressed={isSmart}
+          aria-label="Switch collection type"
+          style={{
+            width: 52,
+            height: 30,
+            borderRadius: 999,
+            border: `1px solid ${isSmart ? C.accent : C.border}`,
+            background: isSmart ? C.accent : "#0d0d0d",
+            padding: 3,
+            position: "relative",
+            cursor: disabled ? "not-allowed" : "pointer",
+            opacity: disabled ? 0.6 : 1,
+            transition: "all .18s",
+          }}
+        >
+          <span
+            style={{
+              display: "block",
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "#fff",
+              transform: `translateX(${isSmart ? 22 : 0}px)`,
+              transition: "transform .18s",
+            }}
+          />
+        </button>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 8,
+        }}
+      >
+        {[
+          {
+            id: "custom",
+            title: "Manual",
+            note: "Manually assign products",
+          },
+          {
+            id: "smart",
+            title: "Smart",
+            note: "Auto-build from rules",
+          },
+        ].map((option) => {
+          const active = value === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => onChange(option.id)}
+              style={{
+                textAlign: "left",
+                border: `1px solid ${active ? C.accent : C.border}`,
+                background: active ? "rgba(59,130,246,.1)" : "#0d0d0d",
+                borderRadius: 8,
+                padding: "10px 12px",
+                cursor: disabled ? "not-allowed" : "pointer",
+                transition: "all .15s",
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>
+                {option.title}
+              </div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>
+                {option.note}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -942,8 +1049,190 @@ function ProductsList({ products }) {
   ));
 }
 
+function ProductPicker({
+  products,
+  selectedProductIds,
+  setSelectedProductIds,
+  search,
+  setSearch,
+  disabled,
+}) {
+  const selectedSet = useMemo(
+    () => new Set(selectedProductIds.map((id) => Number(id))),
+    [selectedProductIds],
+  );
+
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const base = query
+      ? products.filter((product) => {
+          const tags = Array.isArray(product.tags)
+            ? product.tags.join(", ")
+            : String(product.tags || "");
+          return [product.title, product.vendor, product.product_type, tags]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(query));
+        })
+      : products;
+    return base.slice(0, 12);
+  }, [products, search]);
+
+  const toggleProduct = (productId) => {
+    const normalizedId = Number(productId);
+    setSelectedProductIds((prev) => {
+      const exists = prev.some((id) => Number(id) === normalizedId);
+      if (exists) {
+        return prev.filter((id) => Number(id) !== normalizedId);
+      }
+      return [...prev, normalizedId];
+    });
+  };
+
+  return (
+    <>
+      <Field label="Search products" style={{ marginBottom: 12 }}>
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by title, vendor, type, or tag"
+        />
+      </Field>
+      <div
+        style={{
+          display: "grid",
+          gap: 8,
+          maxHeight: 320,
+          overflowY: "auto",
+          paddingRight: 4,
+        }}
+      >
+        {filteredProducts.map((product) => {
+          const firstImage =
+            product.image ||
+            product.images?.[0]?.src ||
+            product.images?.[0]?.url;
+          const checked = selectedSet.has(Number(product.id));
+          return (
+            <button
+              key={product.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => toggleProduct(product.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                width: "100%",
+                textAlign: "left",
+                background: checked ? "rgba(59,130,246,.08)" : "#0d0d0d",
+                border: `1px solid ${checked ? C.accent : C.border}`,
+                borderRadius: 8,
+                padding: "10px 12px",
+                cursor: disabled ? "not-allowed" : "pointer",
+                transition: "all .15s",
+                opacity: disabled ? 0.6 : 1,
+              }}
+            >
+              <div
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 4,
+                  border: `1px solid ${checked ? C.accent : C.border}`,
+                  background: checked ? C.accent : "transparent",
+                  color: "#fff",
+                  fontSize: 11,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                {checked ? "✓" : ""}
+              </div>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  border: `1px solid ${C.border}`,
+                  background: "#111",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                {firstImage ? (
+                  <img
+                    src={firstImage}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 14 }}>📦</span>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: C.text,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {product.title}
+                </div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                  {product.vendor ||
+                    product.product_type ||
+                    product.status ||
+                    "Product"}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+        {!filteredProducts.length && (
+          <div style={{ fontSize: 12, color: C.muted, padding: "6px 0" }}>
+            No products match your search.
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Main AddCollectionPage ─────────────────────────────────────────────────
 export default function AddCollectionPage({ toast, onBack, editCollection }) {
+  const pickCollectionPayload = (payload) => {
+    if (!payload) return null;
+    const base =
+      payload.custom_collection ||
+      payload.smart_collection ||
+      payload.collection ||
+      payload;
+    if (!base || !base.id) return null;
+    return {
+      ...base,
+      collection_type:
+        base.collection_type ||
+        (payload.smart_collection
+          ? "smart"
+          : payload.custom_collection
+            ? "custom"
+            : "custom"),
+    };
+  };
+
   const [currentCollection, setCurrentCollection] = useState(
     editCollection || null,
   );
@@ -953,6 +1242,9 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
   const isPhone = viewportWidth <= 640;
 
   const [title, setTitle] = useState(editCollection?.title || "");
+  const [collectionType, setCollectionType] = useState(
+    editCollection?.collection_type || "custom",
+  );
   const [status, setStatus] = useState(
     editCollection?.published_at ? "active" : "draft",
   );
@@ -960,32 +1252,86 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
   const [imageUrl, setImageUrl] = useState(editCollection?.image?.src || "");
   const [removeImg, setRemoveImg] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [conditions, setConditions] = useState([newCond()]);
   const [matchType, setMatchType] = useState("all");
   const [products, setProducts] = useState([]);
+  const [productOptions, setProductOptions] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
   const descRef = useRef(null);
+  const isBusy = saving || deleting || loadingDetails;
+  const overlayState = loadingDetails
+    ? {
+        badge: "LOADING COLLECTION",
+        title: "Loading collection details",
+        subtitle:
+          "Fetching the latest collection data so the editor opens with the current Shopify values.",
+      }
+    : saving
+      ? {
+          badge: isEdit ? "SAVING COLLECTION" : "CREATING COLLECTION",
+          title: isEdit ? "Saving collection changes" : "Creating collection",
+          subtitle:
+            "Updating collection details, products, and rules in Shopify.",
+        }
+      : deleting
+        ? {
+            badge: "DELETING COLLECTION",
+            title: "Deleting collection",
+            subtitle:
+              "Removing the collection from Shopify and cleaning up the editor state.",
+          }
+        : null;
 
-  const isSmartEdit = currentCollection?.collection_type === "smart";
+  const isSmart = collectionType === "smart";
 
   useEffect(() => {
-    setCurrentCollection(editCollection || null);
+    const nextCollection = editCollection || null;
+    setCurrentCollection(nextCollection);
+    setTitle(nextCollection?.title || "");
+    setCollectionType(nextCollection?.collection_type || "custom");
+    setStatus(nextCollection?.published_at ? "active" : "draft");
+    setImageUrl(nextCollection?.image?.src || "");
+    setImageFile(null);
+    setRemoveImg(false);
+    setProducts([]);
+    setSelectedProductIds([]);
+    setProductSearch("");
+    setConditions([newCond()]);
+    setMatchType("all");
+
+    if (descRef.current) {
+      descRef.current.innerHTML = nextCollection?.body_html || "";
+    }
   }, [editCollection?.id]);
 
   // Load products for existing collection
   useEffect(() => {
     if (isEdit && currentCollection?.id) {
+      setLoadingDetails(true);
       api
         .get(`/collections/${currentCollection.id}`, { force: true })
         .then((d) => {
-          const collectionData = d.custom_collection || d.collection || d;
+          const collectionData = pickCollectionPayload(d);
           if (collectionData?.id) {
             setCurrentCollection((prev) => ({ ...prev, ...collectionData }));
             setTitle(collectionData.title || "");
+            setCollectionType(collectionData.collection_type || "custom");
             setImageUrl(collectionData.image?.src || "");
             setStatus(collectionData.published_at ? "active" : "draft");
+            if (descRef.current) {
+              descRef.current.innerHTML = collectionData.body_html || "";
+            }
           }
-          if (d.products) setProducts(d.products);
+          if (d.products) {
+            setProducts(d.products);
+            setSelectedProductIds(
+              d.products.map((product) => Number(product.id)),
+            );
+          }
           if (d.rules?.length) {
             setConditions(
               d.rules.map((r) => ({
@@ -998,9 +1344,37 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
             setMatchType(d.disjunctive ? "any" : "all");
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setLoadingDetails(false));
     }
   }, [isEdit, currentCollection?.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProducts = async () => {
+      setProductsLoading(true);
+      try {
+        const response = await api.get("/products?fetch_all=true");
+        if (!mounted) return;
+        setProductOptions(response?.products || []);
+      } catch {
+        if (mounted) {
+          setProductOptions([]);
+        }
+      } finally {
+        if (mounted) {
+          setProductsLoading(false);
+        }
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   function updateCond(id, field, val) {
     setConditions((prev) =>
@@ -1022,9 +1396,123 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
     );
   }
 
+  const productMap = useMemo(
+    () =>
+      new Map(productOptions.map((product) => [Number(product.id), product])),
+    [productOptions],
+  );
+
+  const selectedProducts = useMemo(() => {
+    const normalizedIds = selectedProductIds.map((id) => Number(id));
+    return normalizedIds
+      .map(
+        (id) =>
+          productMap.get(id) ||
+          products.find((product) => Number(product.id) === id),
+      )
+      .filter(Boolean);
+  }, [productMap, products, selectedProductIds]);
+
+  const matchesText = (actualValue, operator, expectedValue) => {
+    const actual = String(actualValue || "").toLowerCase();
+    const expected = String(expectedValue || "").toLowerCase();
+    switch (operator) {
+      case "equals":
+        return actual === expected;
+      case "not_equals":
+        return actual !== expected;
+      case "starts_with":
+        return actual.startsWith(expected);
+      case "ends_with":
+        return actual.endsWith(expected);
+      case "contains":
+        return actual.includes(expected);
+      case "not_contains":
+        return !actual.includes(expected);
+      default:
+        return false;
+    }
+  };
+
+  const matchesNumeric = (actualValue, operator, expectedValue) => {
+    const actual = Number(actualValue ?? 0);
+    const expected = Number(expectedValue ?? 0);
+    if (Number.isNaN(expected)) return false;
+    switch (operator) {
+      case "greater_than":
+        return actual > expected;
+      case "less_than":
+        return actual < expected;
+      case "equals":
+        return actual === expected;
+      case "not_equals":
+        return actual !== expected;
+      default:
+        return false;
+    }
+  };
+
+  const doesProductMatchCondition = (product, condition) => {
+    const variants = Array.isArray(product.variants) ? product.variants : [];
+    switch (condition.field) {
+      case "title":
+        return matchesText(product.title, condition.operator, condition.value);
+      case "type":
+        return matchesText(
+          product.product_type,
+          condition.operator,
+          condition.value,
+        );
+      case "vendor":
+        return matchesText(product.vendor, condition.operator, condition.value);
+      case "tag": {
+        const tags = Array.isArray(product.tags)
+          ? product.tags.join(", ")
+          : String(product.tags || "");
+        return matchesText(tags, condition.operator, condition.value);
+      }
+      case "variant_price":
+        return variants.some((variant) =>
+          matchesNumeric(variant.price, condition.operator, condition.value),
+        );
+      case "variant_weight":
+        return variants.some((variant) =>
+          matchesNumeric(variant.weight, condition.operator, condition.value),
+        );
+      case "variant_inventory":
+        return variants.some((variant) =>
+          matchesNumeric(
+            variant.inventory_quantity,
+            condition.operator,
+            condition.value,
+          ),
+        );
+      default:
+        return false;
+    }
+  };
+
+  const filledConds = conditions.filter((c) => c.value.trim() !== "");
+
+  const smartPreviewProducts = useMemo(() => {
+    if (!isSmart || !filledConds.length) return [];
+    return productOptions.filter((product) => {
+      const results = filledConds.map((condition) =>
+        doesProductMatchCondition(product, condition),
+      );
+      return matchType === "all"
+        ? results.every(Boolean)
+        : results.some(Boolean);
+    });
+  }, [filledConds, isSmart, matchType, productOptions]);
+
   async function handleSave() {
     if (!title.trim()) {
       toast("Title is required", "error");
+      return;
+    }
+    if (isSmart && !filledConds.length) {
+      toast("Add at least one smart collection condition", "error");
       return;
     }
     setSaving(true);
@@ -1032,7 +1520,18 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
       const payload = {
         title: title.trim(),
         body_html: descRef.current?.innerHTML || "",
+        collection_type: collectionType,
+        published_at: status === "active" ? new Date().toISOString() : null,
       };
+
+      if (isSmart) {
+        payload.disjunctive = matchType === "any";
+        payload.rules = filledConds.map((condition) => ({
+          column: condition.field,
+          relation: condition.operator,
+          condition: condition.value.trim(),
+        }));
+      }
 
       // Image
       if (imageFile) {
@@ -1056,23 +1555,38 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
           `/collections/${currentCollection.id}`,
           payload,
         );
-        const savedCollection =
-          response?.custom_collection || response?.collection || response;
+        const savedCollection = pickCollectionPayload(response);
         if (savedCollection?.id) {
           setCurrentCollection((prev) => ({ ...prev, ...savedCollection }));
           setTitle(savedCollection.title || title);
+          setCollectionType(savedCollection.collection_type || collectionType);
           setImageUrl(savedCollection.image?.src || imageUrl);
+          setStatus(savedCollection.published_at ? "active" : "draft");
+        }
+        if (!isSmart) {
+          await api.put(
+            `/collections/${currentCollection.id}/products`,
+            selectedProductIds,
+          );
+          setProducts(selectedProducts);
         }
         toast("Collection updated!");
       } else {
         const response = await api.post("/collections/", payload);
-        const savedCollection =
-          response?.custom_collection || response?.collection || response;
+        const savedCollection = pickCollectionPayload(response);
         if (savedCollection?.id) {
           setCurrentCollection(savedCollection);
           setTitle(savedCollection.title || title);
+          setCollectionType(savedCollection.collection_type || collectionType);
           setImageUrl(savedCollection.image?.src || imageUrl);
           setStatus(savedCollection.published_at ? "active" : status);
+          if (!isSmart) {
+            await api.put(
+              `/collections/${savedCollection.id}/products`,
+              selectedProductIds,
+            );
+            setProducts(selectedProducts);
+          }
         }
         toast("Collection created!");
       }
@@ -1095,8 +1609,6 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
     setDeleting(false);
   }
 
-  const filledConds = conditions.filter((c) => c.value.trim() !== "");
-
   return (
     <div
       style={{
@@ -1104,8 +1616,12 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
         margin: "0 auto",
         padding: isPhone ? "0 14px 120px" : "0 24px 120px",
         fontFamily: "inherit",
+        position: "relative",
+        minHeight: "calc(100vh - 120px)",
       }}
     >
+      {isBusy && overlayState && <PageLoadingOverlay {...overlayState} />}
+
       {/* Breadcrumb */}
       <div
         style={{
@@ -1161,6 +1677,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
           <Btn
             onClick={onBack}
             variant="secondary"
+            disabled={isBusy}
             style={{ padding: "8px 12px" }}
           >
             ← Back
@@ -1179,11 +1696,11 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
             width: isPhone ? "100%" : "auto",
           }}
         >
-          <Btn onClick={onBack} variant="secondary">
+          <Btn onClick={onBack} variant="secondary" disabled={isBusy}>
             Discard
           </Btn>
           {isEdit && (
-            <Btn onClick={handleDelete} disabled={deleting} variant="danger">
+            <Btn onClick={handleDelete} disabled={isBusy} variant="danger">
               {deleting ? (
                 <>
                   <Spin size={14} /> Deleting…
@@ -1193,10 +1710,14 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
               )}
             </Btn>
           )}
-          <Btn onClick={handleSave} disabled={saving} variant="primary">
+          <Btn onClick={handleSave} disabled={isBusy} variant="primary">
             {saving ? (
               <>
                 <Spin size={14} /> Saving…
+              </>
+            ) : loadingDetails ? (
+              <>
+                <Spin size={14} /> Loading…
               </>
             ) : isEdit ? (
               "Save changes"
@@ -1231,14 +1752,25 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
               <Field label="Description" optional style={{ marginBottom: 0 }}>
                 <RichText
                   valueRef={descRef}
-                  initialHtml={editCollection?.body_html || ""}
+                  initialHtml={currentCollection?.body_html || ""}
                 />
               </Field>
             </CardBody>
           </Card>
 
+          <Card>
+            <CardTitle>Collection type</CardTitle>
+            <CardBody>
+              <CollectionTypeSwitch
+                value={collectionType}
+                onChange={setCollectionType}
+                disabled={isBusy}
+              />
+            </CardBody>
+          </Card>
+
           {/* Conditions — shown for smart collections when editing, always shown for new */}
-          {(!isEdit || isSmartEdit) && (
+          {isSmart && (
             <Card>
               <CardTitle>Conditions</CardTitle>
               <CardBody>
@@ -1340,28 +1872,64 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
             </Card>
           )}
 
-          {/* Products in collection (edit mode) */}
-          {isEdit && (
-            <Card>
-              <CardTitle
-                right={
-                  <span
-                    style={{ fontSize: 12, fontWeight: 400, color: C.muted }}
-                  >
-                    {products.length} product{products.length !== 1 ? "s" : ""}
-                  </span>
-                }
-              >
-                Products
-              </CardTitle>
-              <CardBody>
-                <ProductsList products={products} />
-              </CardBody>
-            </Card>
-          )}
+          <Card>
+            <CardTitle
+              right={
+                <span style={{ fontSize: 12, fontWeight: 400, color: C.muted }}>
+                  {isSmart
+                    ? `${smartPreviewProducts.length} matching`
+                    : `${selectedProducts.length} selected`}
+                </span>
+              }
+            >
+              Products
+            </CardTitle>
+            <CardBody>
+              {isSmart ? (
+                <>
+                  <p style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>
+                    {filledConds.length
+                      ? "Live preview of products matching the current smart rules."
+                      : "Add conditions above to preview which products will be included."}
+                  </p>
+                  <ProductsList products={smartPreviewProducts} />
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>
+                    Choose the products that belong to this manual collection.
+                  </p>
+                  {productsLoading ? (
+                    <div style={{ fontSize: 12, color: C.muted }}>
+                      Loading products…
+                    </div>
+                  ) : (
+                    <ProductPicker
+                      products={productOptions}
+                      selectedProductIds={selectedProductIds}
+                      setSelectedProductIds={setSelectedProductIds}
+                      search={productSearch}
+                      setSearch={setProductSearch}
+                      disabled={isBusy}
+                    />
+                  )}
+                  <div
+                    style={{
+                      borderTop: `1px solid ${C.border}`,
+                      margin: "14px 0 10px",
+                    }}
+                  />
+                  <ProductsList products={selectedProducts} />
+                </>
+              )}
+            </CardBody>
+          </Card>
 
           {/* SEO */}
-          <SeoSection collectionTitle={title} handle={editCollection?.handle} />
+          <SeoSection
+            collectionTitle={title}
+            handle={currentCollection?.handle}
+          />
         </div>
 
         {/* ── RIGHT ── */}
@@ -1405,7 +1973,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
           />
 
           {/* Collection details (edit only) */}
-          {isEdit && editCollection && (
+          {isEdit && currentCollection && (
             <Card>
               <CardTitle>Collection details</CardTitle>
               <CardBody>
@@ -1421,7 +1989,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
                     marginBottom: 14,
                   }}
                 >
-                  {editCollection.handle || "—"}
+                  {currentCollection.handle || "—"}
                 </div>
                 <div
                   style={{
@@ -1433,9 +2001,9 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
                   Collection type
                 </div>
                 <div style={{ fontSize: 12, color: C.text, marginBottom: 14 }}>
-                  {editCollection.collection_type
-                    ? editCollection.collection_type.charAt(0).toUpperCase() +
-                      editCollection.collection_type.slice(1)
+                  {currentCollection.collection_type
+                    ? collectionType.charAt(0).toUpperCase() +
+                      collectionType.slice(1)
                     : "Custom"}
                 </div>
                 <div
@@ -1455,7 +2023,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
                     wordBreak: "break-all",
                   }}
                 >
-                  {editCollection.id}
+                  {currentCollection.id}
                 </div>
               </CardBody>
             </Card>
@@ -1496,13 +2064,17 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
           </Btn>
           <Btn
             onClick={handleSave}
-            disabled={saving}
+            disabled={isBusy}
             variant="primary"
             style={isPhone ? { flex: 1, justifyContent: "center" } : {}}
           >
             {saving ? (
               <>
                 <Spin size={14} /> Saving…
+              </>
+            ) : loadingDetails ? (
+              <>
+                <Spin size={14} /> Loading…
               </>
             ) : isEdit ? (
               "Save changes"

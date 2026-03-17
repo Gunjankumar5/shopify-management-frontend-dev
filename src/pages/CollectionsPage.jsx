@@ -8,7 +8,7 @@ export default function CollectionsPage({ toast }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // null = list, true = new, object = edit
+  // null = list, true = new, object = edit context
   const [formMode, setFormMode] = useState(null);
 
   useEffect(() => {
@@ -39,6 +39,11 @@ export default function CollectionsPage({ toast }) {
   if (formMode !== null) {
     return (
       <AddCollectionPage
+        key={
+          formMode === true
+            ? "new-collection"
+            : `edit-collection-${formMode.id}`
+        }
         toast={toast}
         editCollection={formMode === true ? null : formMode}
         onBack={() => {
@@ -196,7 +201,17 @@ export default function CollectionsPage({ toast }) {
                   cursor: "pointer",
                   transition: "all .15s",
                 }}
-                onClick={() => setFormMode(col)}
+                onClick={() =>
+                  setFormMode({
+                    id: col.id,
+                    collection_type: col.collection_type || "custom",
+                    title: col.title,
+                    body_html: col.body_html,
+                    image: col.image,
+                    handle: col.handle,
+                    published_at: col.published_at,
+                  })
+                }
               >
                 {/* Thumbnail */}
                 <div

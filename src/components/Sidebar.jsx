@@ -138,14 +138,24 @@ const Sidebar = ({
                 width: 40,
                 height: 40,
                 borderRadius: 8,
-                background: colors.accentGradient,
+                background: colors.bgCard,
+                border: `1px solid ${colors.border}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 20,
+                overflow: "hidden",
+                flexShrink: 0,
               }}
             >
-              🛍️
+              <img
+                src="/icon.png"
+                alt="ShopManager"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
             </div>
             <div>
               <div
