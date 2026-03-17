@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from "react";
-import { API_BASE_URL } from "../api/config";
+import { api } from "../api/api";
 import { Ico, Spin } from "../components/Icons";
+import { PageLoadingOverlay } from "../components/UI";
 
 export default function InventoryPage() {
   const [locations, setLocations] = useState([]);
@@ -20,15 +21,10 @@ export default function InventoryPage() {
       setLoading(true);
       setError(null);
 
-      const [locRes, invRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/inventory/locations`),
-        fetch(`${API_BASE_URL}/inventory/levels`),
+      const [locData, invData] = await Promise.all([
+        api.get("/inventory/locations"),
+        api.get("/inventory/levels"),
       ]);
-      if (!locRes.ok) throw new Error("Failed to fetch locations");
-      if (!invRes.ok) throw new Error("Failed to fetch inventory");
-
-      const locData = await locRes.json();
-      const invData = await invRes.json();
       setLocations(locData.locations || []);
       setInventory(invData.inventory_levels || []);
     } catch (err) {
@@ -40,14 +36,22 @@ export default function InventoryPage() {
 
   const handleUpdateQuantity = async (itemId, locationId, quantity) => {
     if (isNaN(quantity)) return;
+    const previousInventory = inventory;
+
+    setInventory((prev) =>
+      prev.map((item) =>
+        item.inventory_item_id === itemId && item.location_id === locationId
+          ? { ...item, available: quantity }
+          : item,
+      ),
+    );
+
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/inventory/update?inventory_item_id=${itemId}&location_id=${locationId}&quantity=${quantity}`,
-        { method: "POST" },
+      await api.post(
+        `/inventory/update?inventory_item_id=${itemId}&location_id=${locationId}&quantity=${quantity}`,
       );
-      if (!response.ok) throw new Error("Failed to update inventory");
-      await fetchData();
     } catch (err) {
+      setInventory(previousInventory);
       alert(`Error: ${err.message}`);
     }
   };
@@ -63,11 +67,15 @@ export default function InventoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center p-8">
-        <div className="card p-12 text-center">
-          <Spin size="xl" />
-          <p className="text-muted mt-4">Loading inventory...</p>
-        </div>
+      <div
+        className="min-h-screen bg-primary p-8"
+        style={{ position: "relative" }}
+      >
+        <PageLoadingOverlay
+          badge="LOADING INVENTORY"
+          title="Loading inventory"
+          subtitle="Fetching locations and stock levels from Shopify."
+        />
       </div>
     );
   }
@@ -78,14 +86,29 @@ export default function InventoryPage() {
     : inventory;
 
   const filteredInventory = search.trim()
-    ? byLocation.filter((item) =>
-        (item.product_title || "").toLowerCase().includes(search.toLowerCase()) ||
-        (item.variant_title || "").toLowerCase().includes(search.toLowerCase()),
+    ? byLocation.filter(
+        (item) =>
+          (item.product_title || "")
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          (item.variant_title || "")
+            .toLowerCase()
+            .includes(search.toLowerCase()),
       )
     : byLocation;
 
   return (
-    <div className="min-h-screen bg-primary p-8">
+    <div
+      className="min-h-screen bg-primary p-8"
+      style={{ position: "relative" }}
+    >
+      {refreshing && (
+        <PageLoadingOverlay
+          badge="SYNCING INVENTORY"
+          title="Refreshing inventory"
+          subtitle="Pulling the latest inventory levels from Shopify."
+        />
+      )}
       <div className="container max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -232,18 +255,22 @@ export default function InventoryPage() {
                       className="border-b border-strong hover:bg-elevated transition-colors"
                     >
                       <td className="px-4 py-3 text-sm text-primary max-w-xs">
-                        <div className="truncate" title={item.product_title || "Unknown"}>
+                        <div
+                          className="truncate"
+                          title={item.product_title || "Unknown"}
+                        >
                           {item.product_title || "Unknown product"}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted">
-                        {item.variant_title && item.variant_title !== "Default Title"
+                        {item.variant_title &&
+                        item.variant_title !== "Default Title"
                           ? item.variant_title
                           : "â€”"}
                       </td>
                       <td className="px-4 py-3 text-sm text-primary">
-                        {locations.find((l) => l.id === item.location_id)?.name ||
-                          `Location ${item.location_id}`}
+                        {locations.find((l) => l.id === item.location_id)
+                          ?.name || `Location ${item.location_id}`}
                       </td>
                       <td className="px-4 py-3">
                         <input
@@ -266,7 +293,10 @@ export default function InventoryPage() {
                               `New quantity for "${item.product_title || "item"}":`,
                               item.available,
                             );
-                            if (newQty !== null && !isNaN(parseInt(newQty, 10))) {
+                            if (
+                              newQty !== null &&
+                              !isNaN(parseInt(newQty, 10))
+                            ) {
                               handleUpdateQuantity(
                                 item.inventory_item_id,
                                 item.location_id,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useDeferredValue } from "react";
 import { api } from "../api/api";
 import { Ico, Spin } from "../components/Icons";
 import { Badge } from "../components/UI";
@@ -18,20 +18,24 @@ const ProductsPage = ({ toast }) => {
 
   // null = list view, true = new product form, object = edit product form
   const [formMode, setFormMode] = useState(null);
+  const deferredSearch = useDeferredValue(search);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ fetch_all: "true" });
-      if (statusF && statusF !== "all") params.set("status", statusF);
-      const d = await api.get(`/products?${params.toString()}`);
-      setProducts(d.products || []);
-    } catch (error) {
-      toast(`Failed to load products: ${error.message}`, "error");
-    }
-    setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusF]);
+  const load = useCallback(
+    async (options = {}) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ fetch_all: "true" });
+        if (statusF && statusF !== "all") params.set("status", statusF);
+        const d = await api.get(`/products?${params.toString()}`, options);
+        setProducts(d.products || []);
+      } catch (error) {
+        toast(`Failed to load products: ${error.message}`, "error");
+      }
+      setLoading(false);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [statusF],
+  );
 
   useEffect(() => {
     load();
@@ -54,9 +58,9 @@ const ProductsPage = ({ toast }) => {
 
   const filtered = products.filter(
     (p) =>
-      !search ||
-      p.title?.toLowerCase().includes(search.toLowerCase()) ||
-      p.vendor?.toLowerCase().includes(search.toLowerCase()),
+      !deferredSearch ||
+      p.title?.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+      p.vendor?.toLowerCase().includes(deferredSearch.toLowerCase()),
   );
 
   const toggleSel = (id) =>
@@ -79,7 +83,7 @@ const ProductsPage = ({ toast }) => {
     try {
       await api.delete(`/products/${id}`);
       toast("Deleted");
-      load();
+      load({ force: true });
     } catch {
       toast("Failed", "error");
     }
@@ -105,7 +109,7 @@ const ProductsPage = ({ toast }) => {
         `Deleted ${result.deleted} duplicate(s)!${result.failed ? ` (${result.failed} failed)` : ""}`,
         result.deleted > 0 ? "success" : "error",
       );
-      load();
+      load({ force: true });
     } catch {
       toast("Failed to remove duplicates", "error");
     }
@@ -113,52 +117,46 @@ const ProductsPage = ({ toast }) => {
 
   const handleBulkDel = async () => {
     if (!sel.size || !window.confirm(`Delete ${sel.size} products?`)) return;
-    let ok = 0,
-      fail = 0;
-    for (const id of sel) {
-      try {
-        await api.delete(`/products/${id}`);
-        ok++;
-      } catch {
-        fail++;
-      }
-    }
+    const results = await Promise.allSettled(
+      Array.from(sel).map((id) => api.delete(`/products/${id}`)),
+    );
+    const ok = results.filter((result) => result.status === "fulfilled").length;
+    const fail = results.length - ok;
     toast(`Deleted ${ok}${fail ? `, ${fail} failed` : ""}`);
     setSel(new Set());
-    load();
+    load({ force: true });
   };
 
   const handlePriceAdj = async ({ mode, value, dir }) => {
     const prods = products.filter((p) => sel.has(p.id));
-    let ok = 0,
-      fail = 0;
-    for (const p of prods) {
-      const v = p.variants?.[0];
-      if (!v?.price) continue;
-      const cur = parseFloat(v.price);
-      let np =
-        mode === "percent"
-          ? dir === "increase"
-            ? cur * (1 + value / 100)
-            : cur * (1 - value / 100)
-          : dir === "increase"
-            ? cur + value
-            : cur - value;
-      np = Math.max(0, np).toFixed(2);
-      try {
-        await api.put(`/products/${p.id}`, {
+    const priceUpdateRequests = prods
+      .map((p) => {
+        const v = p.variants?.[0];
+        if (!v?.price) return null;
+        const cur = parseFloat(v.price);
+        let np =
+          mode === "percent"
+            ? dir === "increase"
+              ? cur * (1 + value / 100)
+              : cur * (1 - value / 100)
+            : dir === "increase"
+              ? cur + value
+              : cur - value;
+        np = Math.max(0, np).toFixed(2);
+        return api.put(`/products/${p.id}`, {
           title: p.title,
           variants: [{ ...v, price: np }],
         });
-        ok++;
-      } catch {
-        fail++;
-      }
-    }
+      })
+      .filter(Boolean);
+
+    const results = await Promise.allSettled(priceUpdateRequests);
+    const ok = results.filter((result) => result.status === "fulfilled").length;
+    const fail = results.length - ok;
     toast(`Updated ${ok} prices${fail ? `, ${fail} failed` : ""}`);
     setPriceM(false);
     setSel(new Set());
-    load();
+    load({ force: true });
   };
 
   const stats = {
@@ -168,7 +166,10 @@ const ProductsPage = ({ toast }) => {
   };
 
   return (
-    <div className="fade-up container max-w-7xl mx-auto px-4 py-8">
+    <div
+      className="fade-up container max-w-7xl mx-auto px-4 py-8"
+      style={{ position: "relative", minHeight: "calc(100vh - 120px)" }}
+    >
       {priceM && (
         <PriceModal
           count={sel.size}
@@ -341,7 +342,7 @@ const ProductsPage = ({ toast }) => {
         {/* Actions */}
         <div className="flex items-center gap-2 ml-auto">
           <button
-            onClick={load}
+            onClick={() => load({ force: true })}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all"
             style={{

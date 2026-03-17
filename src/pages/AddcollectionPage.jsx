@@ -944,7 +944,10 @@ function ProductsList({ products }) {
 
 // ── Main AddCollectionPage ─────────────────────────────────────────────────
 export default function AddCollectionPage({ toast, onBack, editCollection }) {
-  const isEdit = !!editCollection;
+  const [currentCollection, setCurrentCollection] = useState(
+    editCollection || null,
+  );
+  const isEdit = !!currentCollection;
   const viewportWidth = useViewportWidth();
   const isTabletOrBelow = viewportWidth <= 1024;
   const isPhone = viewportWidth <= 640;
@@ -963,14 +966,25 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
   const [products, setProducts] = useState([]);
   const descRef = useRef(null);
 
-  const isSmartEdit = editCollection?.collection_type === "smart";
+  const isSmartEdit = currentCollection?.collection_type === "smart";
+
+  useEffect(() => {
+    setCurrentCollection(editCollection || null);
+  }, [editCollection?.id]);
 
   // Load products for existing collection
   useEffect(() => {
-    if (isEdit && editCollection?.id) {
+    if (isEdit && currentCollection?.id) {
       api
-        .get(`/collections/${editCollection.id}`)
+        .get(`/collections/${currentCollection.id}`, { force: true })
         .then((d) => {
+          const collectionData = d.custom_collection || d.collection || d;
+          if (collectionData?.id) {
+            setCurrentCollection((prev) => ({ ...prev, ...collectionData }));
+            setTitle(collectionData.title || "");
+            setImageUrl(collectionData.image?.src || "");
+            setStatus(collectionData.published_at ? "active" : "draft");
+          }
           if (d.products) setProducts(d.products);
           if (d.rules?.length) {
             setConditions(
@@ -986,7 +1000,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
         })
         .catch(() => {});
     }
-  }, []);
+  }, [isEdit, currentCollection?.id]);
 
   function updateCond(id, field, val) {
     setConditions((prev) =>
@@ -1038,13 +1052,30 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
       }
 
       if (isEdit) {
-        await api.put(`/collections/${editCollection.id}`, payload);
+        const response = await api.put(
+          `/collections/${currentCollection.id}`,
+          payload,
+        );
+        const savedCollection =
+          response?.custom_collection || response?.collection || response;
+        if (savedCollection?.id) {
+          setCurrentCollection((prev) => ({ ...prev, ...savedCollection }));
+          setTitle(savedCollection.title || title);
+          setImageUrl(savedCollection.image?.src || imageUrl);
+        }
         toast("Collection updated!");
       } else {
-        await api.post("/collections/", payload);
+        const response = await api.post("/collections/", payload);
+        const savedCollection =
+          response?.custom_collection || response?.collection || response;
+        if (savedCollection?.id) {
+          setCurrentCollection(savedCollection);
+          setTitle(savedCollection.title || title);
+          setImageUrl(savedCollection.image?.src || imageUrl);
+          setStatus(savedCollection.published_at ? "active" : status);
+        }
         toast("Collection created!");
       }
-      onBack();
     } catch (e) {
       toast(e?.message || "Failed to save collection", "error");
     }
@@ -1055,7 +1086,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
     if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
     setDeleting(true);
     try {
-      await api.delete(`/collections/${editCollection.id}`);
+      await api.delete(`/collections/${currentCollection.id}`);
       toast("Collection deleted");
       onBack();
     } catch {
@@ -1119,9 +1150,27 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
           flexWrap: "wrap",
         }}
       >
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>
-          {isEdit ? title || "Edit collection" : "Add collection"}
-        </h1>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Btn
+            onClick={onBack}
+            variant="secondary"
+            style={{ padding: "8px 12px" }}
+          >
+            ← Back
+          </Btn>
+          <h1
+            style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}
+          >
+            {isEdit ? title || "Edit collection" : "Add collection"}
+          </h1>
+        </div>
         <div
           style={{
             display: "flex",

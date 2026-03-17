@@ -57,7 +57,10 @@ export default function CollectionsPage({ toast }) {
   };
 
   return (
-    <div className="fade-up container max-w-5xl mx-auto px-4 py-8">
+    <div
+      className="fade-up container max-w-5xl mx-auto px-4 py-8"
+      style={{ position: "relative", minHeight: "calc(100vh - 120px)" }}
+    >
       {/* Header */}
       <div
         style={{

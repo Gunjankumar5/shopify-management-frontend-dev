@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
+import { PageLoadingOverlay } from "../components/UI";
 
 function useViewportWidth() {
   const [width, setWidth] = useState(() => window.innerWidth);
@@ -704,11 +705,16 @@ function VariantRow({ v, onChange, onRemove, isOnly, compact }) {
 }
 
 // ── SEO preview ────────────────────────────────────────────────────────────
-function SeoSection({ title }) {
+function SeoSection({
+  title,
+  seoTitle,
+  setSeoTitle,
+  seoDesc,
+  setSeoDesc,
+  seoHandle,
+  setSeoHandle,
+}) {
   const [open, setOpen] = useState(false);
-  const [seoTitle, setSeoTitle] = useState("");
-  const [seoDesc, setSeoDesc] = useState("");
-  const [seoHandle, setSeoHandle] = useState("");
 
   useEffect(() => {
     if (!seoHandle) {
@@ -808,6 +814,150 @@ function SeoSection({ title }) {
   );
 }
 
+function CollectionPicker({
+  collectionOptions,
+  selectedCollectionIds,
+  setSelectedCollectionIds,
+  loading,
+}) {
+  const [query, setQuery] = useState("");
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const assignableCollections = collectionOptions.filter(
+    (collection) => collection.collection_type !== "smart",
+  );
+  const visibleCollections = assignableCollections.filter((collection) => {
+    if (!normalizedQuery) return true;
+    return String(collection.title || "")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+
+  const toggleCollection = (collectionId) => {
+    setSelectedCollectionIds((prev) =>
+      prev.includes(collectionId)
+        ? prev.filter((id) => id !== collectionId)
+        : [...prev, collectionId],
+    );
+  };
+
+  return (
+    <div>
+      <Input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={loading ? "Loading collections..." : "Search collections"}
+      />
+      <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
+        Only custom collections can be assigned manually. Smart collections are
+        rule-based in Shopify.
+      </div>
+      <div
+        style={{
+          marginTop: 8,
+          border: `1px solid ${C.border}`,
+          borderRadius: 7,
+          background: "#0d0d0d",
+          maxHeight: 180,
+          overflowY: "auto",
+        }}
+      >
+        {loading ? (
+          <div style={{ padding: 12, fontSize: 12, color: C.muted }}>
+            Loading collections...
+          </div>
+        ) : visibleCollections.length ? (
+          visibleCollections.map((collection) => {
+            const collectionId = Number(collection.id);
+            const checked = selectedCollectionIds.includes(collectionId);
+
+            return (
+              <label
+                key={collectionId}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderBottom: `1px solid ${C.border}`,
+                  cursor: "pointer",
+                  color: C.text,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleCollection(collectionId)}
+                  style={{ accentColor: C.accent, width: 14, height: 14 }}
+                />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>
+                    {collection.title}
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted }}>
+                    {collection.collection_type || "collection"}
+                  </div>
+                </div>
+              </label>
+            );
+          })
+        ) : (
+          <div style={{ padding: 12, fontSize: 12, color: C.muted }}>
+            No collections found.
+          </div>
+        )}
+      </div>
+      {selectedCollectionIds.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 6,
+            marginTop: 8,
+          }}
+        >
+          {selectedCollectionIds.map((id) => {
+            const collection = assignableCollections.find(
+              (item) => Number(item.id) === id,
+            );
+            return (
+              <span
+                key={id}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 8px",
+                  borderRadius: 999,
+                  background: "#202020",
+                  color: C.text,
+                  fontSize: 12,
+                }}
+              >
+                {collection?.title || `Collection ${id}`}
+                <button
+                  type="button"
+                  onClick={() => toggleCollection(id)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: C.muted,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    padding: 0,
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Status dot ─────────────────────────────────────────────────────────────
 function StatusDot({ status }) {
   const colors = { active: C.success, draft: C.muted, archived: C.danger };
@@ -844,7 +994,8 @@ function newVariant(name = "", price = "", sku = "", extra = {}) {
 }
 
 export default function AddProductPage({ toast, onBack, editProduct }) {
-  const isEdit = !!editProduct;
+  const [currentProduct, setCurrentProduct] = useState(editProduct || null);
+  const isEdit = !!currentProduct;
   const viewportWidth = useViewportWidth();
   const isTabletOrBelow = viewportWidth <= 1024;
   const isPhone = viewportWidth <= 640;
@@ -866,6 +1017,9 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
   const [barcode, setBarcode] = useState(
     editProduct?.variants?.[0]?.barcode || "",
   );
+  const [chargeTax, setChargeTax] = useState(
+    editProduct?.variants?.[0]?.taxable ?? true,
+  );
   const [status, setStatus] = useState(editProduct?.status || "draft");
   const [trackQty, setTrackQty] = useState(
     Boolean(editProduct?.variants?.[0]?.inventory_management),
@@ -873,8 +1027,12 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
   const [qty, setQty] = useState(
     String(editProduct?.variants?.[0]?.inventory_quantity ?? "0"),
   );
-  const [isPhysical, setIsPhysical] = useState(true);
-  const [weight, setWeight] = useState("");
+  const [isPhysical, setIsPhysical] = useState(
+    editProduct?.variants?.[0]?.requires_shipping ?? true,
+  );
+  const [weight, setWeight] = useState(
+    editProduct?.variants?.[0]?.weight || "",
+  );
   const [tags, setTags] = useState(() => {
     const raw = editProduct?.tags;
     if (!raw) return [];
@@ -885,6 +1043,16 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
       .filter(Boolean);
   });
   const [mediaFiles, setMediaFiles] = useState([]);
+  const [seoTitle, setSeoTitle] = useState(editProduct?.seo?.title || "");
+  const [seoDesc, setSeoDesc] = useState(editProduct?.seo?.description || "");
+  const [seoHandle, setSeoHandle] = useState(
+    editProduct?.seo?.handle || editProduct?.handle || "",
+  );
+  const [collectionOptions, setCollectionOptions] = useState([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState(() =>
+    (editProduct?.collection_ids || []).map((id) => Number(id)),
+  );
   const [variants, setVariants] = useState(() => {
     const existing = editProduct?.variants || [];
     if (!existing.length) return [newVariant()];
@@ -900,9 +1068,37 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
   const [saving, setSaving] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const descRef = useRef(null);
+  const isBusy = saving || loadingDetails || collectionsLoading;
+
+  const overlayState = saving
+    ? {
+        badge: isEdit ? "SAVING PRODUCT" : "CREATING PRODUCT",
+        title: isEdit ? "Saving product changes" : "Creating product",
+        subtitle:
+          "Pushing product details, variants, media, and related settings to Shopify.",
+      }
+    : loadingDetails
+      ? {
+          badge: "LOADING PRODUCT",
+          title: "Loading product details",
+          subtitle:
+            "Fetching the current Shopify product data so the editor opens with the latest values.",
+        }
+      : collectionsLoading
+        ? {
+            badge: "LOADING COLLECTIONS",
+            title: "Loading collections",
+            subtitle:
+              "Fetching assignable collections from Shopify for this product.",
+          }
+        : null;
 
   useEffect(() => {
-    if (!isEdit || !editProduct?.id) {
+    setCurrentProduct(editProduct || null);
+  }, [editProduct?.id]);
+
+  useEffect(() => {
+    if (!isEdit || !currentProduct?.id) {
       if (descRef.current) descRef.current.innerHTML = "";
       return;
     }
@@ -911,9 +1107,13 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
     const loadFullProduct = async () => {
       setLoadingDetails(true);
       try {
-        const res = await api.get(`/products/${editProduct.id}`);
+        const res = await api.get(`/products/${currentProduct.id}`, {
+          force: true,
+        });
         const p = res?.product || res;
         if (!mounted || !p) return;
+
+        setCurrentProduct(p);
 
         setTitle(p.title || "");
         setVendor(p.vendor || "");
@@ -927,8 +1127,17 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
         setCostPerItem(first.cost || "");
         setSku(first.sku || "");
         setBarcode(first.barcode || "");
+        setChargeTax(first.taxable ?? true);
         setTrackQty(Boolean(first.inventory_management));
         setQty(String(first.inventory_quantity ?? "0"));
+        setIsPhysical(first.requires_shipping ?? true);
+        setWeight(first.weight || "");
+        setSeoTitle(p.seo?.title || "");
+        setSeoDesc(p.seo?.description || "");
+        setSeoHandle(p.handle || p.seo?.handle || "");
+        setSelectedCollectionIds(
+          (p.collection_ids || []).map((id) => Number(id)).filter(Boolean),
+        );
 
         const parsedTags = Array.isArray(p.tags)
           ? p.tags
@@ -979,7 +1188,32 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
     return () => {
       mounted = false;
     };
-  }, [isEdit, editProduct?.id, toast]);
+  }, [isEdit, currentProduct?.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCollections = async () => {
+      setCollectionsLoading(true);
+      try {
+        const response = await api.get("/collections/");
+        if (!mounted) return;
+        setCollectionOptions(response?.custom_collections || []);
+      } catch {
+        if (mounted) {
+          setCollectionOptions([]);
+        }
+      } finally {
+        if (mounted) setCollectionsLoading(false);
+      }
+    };
+
+    loadCollections();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Margin calc
   const margin = (() => {
@@ -1011,6 +1245,14 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
         status,
         tags: tags.join(", "),
         published: status === "active",
+        chargeTax,
+        costPerItem,
+        collections: selectedCollectionIds,
+        seo: {
+          title: seoTitle.trim(),
+          description: seoDesc.trim(),
+          handle: seoHandle.trim(),
+        },
         variants: variants
           .filter((v) => v.name || variants.length === 1)
           .map((v, idx) => {
@@ -1018,10 +1260,17 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               option1: v.name || "Default Title",
               price: v.price || price || "0.00",
               sku: v.sku || (idx === 0 ? sku : ""),
+              taxable: chargeTax,
+              requires_shipping: isPhysical,
               compare_at_price:
                 v.compare_at_price || (idx === 0 ? comparePrice : "") || null,
               barcode: v.barcode || (idx === 0 ? barcode : "") || null,
             };
+
+            if (isPhysical && weight !== "") {
+              variantPayload.weight = Number(weight);
+              variantPayload.weight_unit = "kg";
+            }
 
             if (trackQty) {
               variantPayload.inventory_management = "shopify";
@@ -1046,15 +1295,25 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
         })),
       };
       if (isEdit) {
-        await api.put(`/products/${editProduct.id}`, payload);
+        const response = await api.put(
+          `/products/${currentProduct.id}`,
+          payload,
+        );
+        const savedProduct = response?.product || response;
+        if (savedProduct?.id) {
+          setCurrentProduct(savedProduct);
+        }
         toast("Product updated!");
       } else {
-        await api.post("/products", payload);
+        const response = await api.post("/products", payload);
+        const savedProduct = response?.product || response;
+        if (savedProduct?.id) {
+          setCurrentProduct(savedProduct);
+        }
         toast("Product created!");
       }
-      onBack();
-    } catch {
-      toast("Failed to save product", "error");
+    } catch (error) {
+      toast(error?.message || "Failed to save product", "error");
     }
     setSaving(false);
   }
@@ -1066,8 +1325,12 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
         margin: "0 auto",
         padding: isPhone ? "0 14px 120px" : "0 24px 120px",
         fontFamily: "inherit",
+        position: "relative",
+        minHeight: "calc(100vh - 120px)",
       }}
     >
+      {isBusy && overlayState && <PageLoadingOverlay {...overlayState} />}
+
       {/* Breadcrumb */}
       <div
         style={{
@@ -1112,9 +1375,27 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
           flexWrap: "wrap",
         }}
       >
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>
-          {isEdit ? "Edit product" : "Add product"}
-        </h1>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <Btn
+            onClick={onBack}
+            variant="secondary"
+            style={{ padding: "8px 12px" }}
+          >
+            ← Back
+          </Btn>
+          <h1
+            style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}
+          >
+            {isEdit ? "Edit product" : "Add product"}
+          </h1>
+        </div>
         <div
           style={{
             display: "flex",
@@ -1127,11 +1408,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
             Discard
           </Btn>
           {isEdit && <Btn variant="danger">🗑 Delete</Btn>}
-          <Btn
-            onClick={handleSave}
-            disabled={saving || loadingDetails}
-            variant="primary"
-          >
+          <Btn onClick={handleSave} disabled={isBusy} variant="primary">
             {saving ? (
               <>
                 <Spin size={14} /> Saving…
@@ -1227,7 +1504,8 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
                 <input
                   type="checkbox"
                   id="_chargeTax"
-                  defaultChecked
+                  checked={chargeTax}
+                  onChange={(e) => setChargeTax(e.target.checked)}
                   style={{ accentColor: C.accent, width: 14, height: 14 }}
                 />
                 <label
@@ -1520,7 +1798,15 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
           </Card>
 
           {/* SEO */}
-          <SeoSection title={title} />
+          <SeoSection
+            title={title}
+            seoTitle={seoTitle}
+            setSeoTitle={setSeoTitle}
+            seoDesc={seoDesc}
+            setSeoDesc={setSeoDesc}
+            seoHandle={seoHandle}
+            setSeoHandle={setSeoHandle}
+          />
         </div>
 
         {/* ── RIGHT ── */}
@@ -1619,7 +1905,12 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
                 />
               </Field>
               <Field label="Collections" optional>
-                <Input placeholder="Search or create collections" />
+                <CollectionPicker
+                  collectionOptions={collectionOptions}
+                  selectedCollectionIds={selectedCollectionIds}
+                  setSelectedCollectionIds={setSelectedCollectionIds}
+                  loading={collectionsLoading}
+                />
               </Field>
               <Field
                 label="Tags"
@@ -1663,7 +1954,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
           </Btn>
           <Btn
             onClick={handleSave}
-            disabled={saving || loadingDetails}
+            disabled={isBusy}
             variant="primary"
             style={isPhone ? { flex: 1, justifyContent: "center" } : {}}
           >

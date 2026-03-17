@@ -96,6 +96,90 @@ export const Modal = ({ title, subtitle, onClose, children, maxWidth = 660 }) =>
     document.body,
   );
 
+export const PageLoadingOverlay = ({
+  badge = "WORKING",
+  title = "Please wait",
+  subtitle = "We are processing your request.",
+}) => (
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      zIndex: 80,
+      background: "var(--bg-overlay)",
+      backdropFilter: "blur(6px)",
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "center",
+      padding: "56px 16px 16px",
+    }}
+  >
+    <div
+      className="card"
+      style={{
+        width: "min(92vw, 360px)",
+        padding: 24,
+        textAlign: "center",
+        border: "1px solid var(--border-strong)",
+        boxShadow: "0 18px 48px rgba(0,0,0,0.35)",
+      }}
+    >
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "4px 10px",
+          borderRadius: 999,
+          background: "var(--warning-light)",
+          color: "var(--warning)",
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          marginBottom: 14,
+        }}
+      >
+        {badge}
+      </div>
+      <div
+        style={{
+          width: 52,
+          height: 52,
+          margin: "0 auto 14px",
+          borderRadius: 16,
+          background: "var(--bg-overlay-light)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--accent)",
+        }}
+      >
+        <Ico n="sync" size={18} className="animate-spin" />
+      </div>
+      <div
+        style={{
+          color: "var(--text-primary)",
+          fontSize: 18,
+          fontWeight: 700,
+          marginBottom: 6,
+          fontFamily: "'Syne', sans-serif",
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          color: "var(--text-muted)",
+          fontSize: 13,
+          lineHeight: 1.5,
+        }}
+      >
+        {subtitle}
+      </div>
+    </div>
+  </div>
+);
+
 export const Field = ({
   label,
   value,
