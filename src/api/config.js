@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "../lib/authFetch";
+
 const rawOrigin = (import.meta.env.VITE_API_ORIGIN || "")
   .trim()
   .replace(/\/$/, "");
@@ -20,11 +22,9 @@ export const API_ENDPOINTS = {
 };
 
 export async function fetchJson(url, options = {}) {
+  const headers = await getAuthHeaders(options.headers || {});
   const res = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+    headers,
     ...options,
   });
 

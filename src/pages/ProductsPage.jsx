@@ -1,48 +1,130 @@
-import { useState, useEffect, useCallback, useDeferredValue } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { api } from "../api/api";
 import { Ico, Spin } from "../components/Icons";
 import { Badge } from "../components/UI";
 import { PriceModal } from "../components/Modals";
 import ProductCard from "../components/ProductCard";
 import AddProductPage from "./Addproductpage";
+import { FixedSizeGrid, FixedSizeList } from "react-window";
 
 const ProductsPage = ({ toast }) => {
+  const CLIENT_PAGE_SIZE = 50;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("grid");
   const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [statusF, setStatusF] = useState("all");
   const [sel, setSel] = useState(new Set());
   const [priceM, setPriceM] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [isFetchingAll, setIsFetchingAll] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [viewportW, setViewportW] = useState(() => window.innerWidth);
+  const [viewportH, setViewportH] = useState(() => window.innerHeight);
 
   // null = list view, true = new product form, object = edit product form
   const [formMode, setFormMode] = useState(null);
-  const deferredSearch = useDeferredValue(search);
 
-  const load = useCallback(
-    async (options = {}) => {
+  const loadAllProducts = useCallback(
+    async ({ force = false } = {}) => {
       setLoading(true);
+      setIsFetchingAll(true);
+      setProducts([]);
+      setLoadedCount(0);
+      setCurrentPage(1);
+
       try {
-        const params = new URLSearchParams({ fetch_all: "true" });
-        if (statusF && statusF !== "all") params.set("status", statusF);
-        const d = await api.get(`/products?${params.toString()}`, options);
-        setProducts(d.products || []);
+        const all = [];
+        let cursor = null;
+        let hasNext = true;
+        let pagesFetched = 0;
+        const maxPages = 500;
+
+        while (hasNext && pagesFetched < maxPages) {
+          const params = new URLSearchParams({ limit: "250" });
+          if (statusF && statusF !== "all") params.set("status", statusF);
+          if (searchQuery) params.set("search", searchQuery);
+          if (cursor) params.set("page_info", cursor);
+
+          const d = await api.get(`/products?${params.toString()}`, {
+            force: force || Boolean(cursor),
+          });
+
+          const batch = d.products || [];
+          all.push(...batch);
+          setLoadedCount(all.length);
+
+          cursor = d.next_page_info || null;
+          hasNext = Boolean(d.has_next_page && cursor);
+          pagesFetched += 1;
+        }
+
+        setProducts(all);
       } catch (error) {
         toast(`Failed to load products: ${error.message}`, "error");
+      } finally {
+        setIsFetchingAll(false);
+        setLoading(false);
       }
-      setLoading(false);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [statusF],
+    [statusF, searchQuery, toast],
   );
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusF]);
+    const onResize = () => {
+      setViewportW(window.innerWidth);
+      setViewportH(window.innerHeight);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
-  // ── If form is open, render it full-page ─────────────────────────────────
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setSearchQuery(search.trim());
+    }, 300);
+    return () => window.clearTimeout(id);
+  }, [search]);
+
+  useEffect(() => {
+    setSel(new Set());
+    loadAllProducts({ force: true });
+  }, [statusF, searchQuery, loadAllProducts]);
+
+  const filtered = products;
+  const productCount = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(productCount / CLIENT_PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const pageStart = (safeCurrentPage - 1) * CLIENT_PAGE_SIZE;
+  const pagedProducts = useMemo(
+    () => filtered.slice(pageStart, pageStart + CLIENT_PAGE_SIZE),
+    [filtered, pageStart],
+  );
+
+  const gridColumns = useMemo(() => {
+    if (viewportW < 640) return 2;
+    if (viewportW < 900) return 3;
+    if (viewportW < 1200) return 4;
+    return 5;
+  }, [viewportW]);
+
+  const gridGap = 12;
+  const gridContainerWidth = Math.max(320, viewportW - 360);
+  const gridItemWidth = Math.max(180, Math.floor((gridContainerWidth - gridGap * (gridColumns + 1)) / gridColumns));
+  const gridItemHeight = 395;
+  const gridRows = Math.ceil(pagedProducts.length / gridColumns);
+  const virtualHeight = Math.max(320, Math.min(760, viewportH - 360));
+
+  // Keep hook order stable by placing conditional return after hooks.
   if (formMode !== null) {
     return (
       <AddProductPage
@@ -50,18 +132,11 @@ const ProductsPage = ({ toast }) => {
         editProduct={formMode === true ? null : formMode}
         onBack={() => {
           setFormMode(null);
-          load();
+          loadAllProducts({ force: true });
         }}
       />
     );
   }
-
-  const filtered = products.filter(
-    (p) =>
-      !deferredSearch ||
-      p.title?.toLowerCase().includes(deferredSearch.toLowerCase()) ||
-      p.vendor?.toLowerCase().includes(deferredSearch.toLowerCase()),
-  );
 
   const toggleSel = (id) =>
     setSel((prev) => {
@@ -72,9 +147,9 @@ const ProductsPage = ({ toast }) => {
 
   const selAll = () =>
     setSel(
-      sel.size === filtered.length
+      sel.size === pagedProducts.length
         ? new Set()
-        : new Set(filtered.map((p) => p.id)),
+        : new Set(pagedProducts.map((p) => p.id)),
     );
 
   const handleDel = async (id) => {
@@ -83,7 +158,7 @@ const ProductsPage = ({ toast }) => {
     try {
       await api.delete(`/products/${id}`);
       toast("Deleted");
-      load({ force: true });
+      loadAllProducts({ force: true });
     } catch {
       toast("Failed", "error");
     }
@@ -109,7 +184,7 @@ const ProductsPage = ({ toast }) => {
         `Deleted ${result.deleted} duplicate(s)!${result.failed ? ` (${result.failed} failed)` : ""}`,
         result.deleted > 0 ? "success" : "error",
       );
-      load({ force: true });
+      loadAllProducts({ force: true });
     } catch {
       toast("Failed to remove duplicates", "error");
     }
@@ -124,7 +199,7 @@ const ProductsPage = ({ toast }) => {
     const fail = results.length - ok;
     toast(`Deleted ${ok}${fail ? `, ${fail} failed` : ""}`);
     setSel(new Set());
-    load({ force: true });
+    loadAllProducts({ force: true });
   };
 
   const handlePriceAdj = async ({ mode, value, dir }) => {
@@ -156,7 +231,7 @@ const ProductsPage = ({ toast }) => {
     toast(`Updated ${ok} prices${fail ? `, ${fail} failed` : ""}`);
     setPriceM(false);
     setSel(new Set());
-    load({ force: true });
+    loadAllProducts({ force: true });
   };
 
   const stats = {
@@ -342,7 +417,9 @@ const ProductsPage = ({ toast }) => {
         {/* Actions */}
         <div className="flex items-center gap-2 ml-auto">
           <button
-            onClick={() => load({ force: true })}
+            onClick={() => {
+              loadAllProducts({ force: true });
+            }}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all"
             style={{
@@ -415,7 +492,7 @@ const ProductsPage = ({ toast }) => {
           <input
             type="checkbox"
             className="chk"
-            checked={sel.size === filtered.length && filtered.length > 0}
+            checked={sel.size === pagedProducts.length && pagedProducts.length > 0}
             onChange={selAll}
             id="selectAll"
           />
@@ -423,7 +500,7 @@ const ProductsPage = ({ toast }) => {
             htmlFor="selectAll"
             className="text-xs text-secondary cursor-pointer"
           >
-            Select all {filtered.length}
+            Select all {pagedProducts.length} on this page
           </label>
         </div>
       )}
@@ -446,43 +523,56 @@ const ProductsPage = ({ toast }) => {
           ))}
         </div>
       ) : view === "grid" ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {filtered.map((p) => (
-            <ProductCard
-              key={p.id}
-              p={p}
-              sel={sel.has(p.id)}
-              onSel={toggleSel}
-              onEdit={() => setFormMode(p)}
-              onDel={handleDel}
-            />
-          ))}
-          {filtered.length === 0 && (
-            <p className="text-muted text-center py-8 col-span-full">
-              No products found
-            </p>
+        <div style={{ width: "100%", overflow: "hidden" }}>
+          {pagedProducts.length > 0 ? (
+            <FixedSizeGrid
+              columnCount={gridColumns}
+              columnWidth={gridItemWidth + gridGap}
+              height={virtualHeight}
+              rowCount={gridRows}
+              rowHeight={gridItemHeight + gridGap}
+              width={Math.min(gridContainerWidth + gridGap, viewportW - 40)}
+            >
+              {({ columnIndex, rowIndex, style }) => {
+                const index = rowIndex * gridColumns + columnIndex;
+                const p = pagedProducts[index];
+                if (!p) return null;
+                return (
+                  <div
+                    style={{
+                      ...style,
+                      left: style.left + gridGap,
+                      top: style.top + gridGap,
+                      width: gridItemWidth,
+                      height: gridItemHeight,
+                    }}
+                  >
+                    <ProductCard
+                      p={p}
+                      sel={sel.has(p.id)}
+                      onSel={toggleSel}
+                      onEdit={() => setFormMode(p)}
+                      onDel={handleDel}
+                    />
+                  </div>
+                );
+              }}
+            </FixedSizeGrid>
+          ) : (
+            <p className="text-muted text-center py-8">No products found</p>
           )}
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full text-xs">
-            <thead className="bg-secondary border-b border-strong">
-              <tr>
-                <th className="p-2 w-8"></th>
-                {["Product", "Vendor", "Price", "Stock", "Status", ""].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="p-2 text-left text-[0.65rem] font-semibold text-muted uppercase"
-                    >
-                      {h}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => {
+        <div className="card overflow-x-auto overflow-y-hidden" style={{ height: virtualHeight + 8 }}>
+          {pagedProducts.length > 0 ? (
+            <FixedSizeList
+              height={virtualHeight}
+              itemCount={pagedProducts.length}
+              itemSize={74}
+              width={Math.max(860, Math.min(gridContainerWidth, 1400))}
+            >
+              {({ index, style }) => {
+                const p = pagedProducts[index];
                 const img = p.images?.[0]?.src;
                 const price = p.variants?.[0]?.price;
                 const inv = p.variants?.reduce(
@@ -490,95 +580,106 @@ const ProductsPage = ({ toast }) => {
                   0,
                 );
                 return (
-                  <tr
-                    key={p.id}
-                    className="border-b border-strong last:border-0 hover:bg-elevated transition-colors"
+                  <div
+                    style={{
+                      ...style,
+                      display: "grid",
+                      gridTemplateColumns:
+                        "34px minmax(220px,1.6fr) minmax(120px,1fr) 90px 70px 90px 92px",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      borderBottom: "1px solid var(--border-strong)",
+                    }}
                   >
-                    <td className="p-2">
-                      <input
-                        type="checkbox"
-                        className="chk"
-                        checked={sel.has(p.id)}
-                        onChange={() => toggleSel(p.id)}
-                        aria-label={`Select ${p.title}`}
-                      />
-                    </td>
-                    <td className="p-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded bg-secondary overflow-hidden flex items-center justify-center flex-shrink-0">
-                          {img ? (
-                            <img
-                              src={img}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Ico n="image" size={12} className="text-muted" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium text-primary text-xs">
-                            {p.title}
-                          </div>
-                          {p.product_type && (
-                            <div className="text-[0.6rem] text-muted">
-                              {p.product_type}
-                            </div>
-                          )}
-                        </div>
+                    <input
+                      type="checkbox"
+                      className="chk"
+                      checked={sel.has(p.id)}
+                      onChange={() => toggleSel(p.id)}
+                      aria-label={`Select ${p.title}`}
+                    />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded bg-secondary overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {img ? (
+                          <img src={img} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Ico n="image" size={12} className="text-muted" />
+                        )}
                       </div>
-                    </td>
-                    <td className="p-2 text-secondary text-xs">
-                      {p.vendor || "—"}
-                    </td>
-                    <td className="p-2 font-semibold text-accent text-xs">
-                      {price ? `$${price}` : "—"}
-                    </td>
-                    <td
-                      className={`p-2 text-xs ${inv > 0 ? "text-success" : "text-danger"}`}
-                    >
-                      {inv}
-                    </td>
-                    <td className="p-2">
-                      <Badge status={p.status} />
-                    </td>
-                    <td className="p-2">
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => setFormMode(p)}
-                          className="btn btn-secondary"
-                          style={{ padding: "4px", fontSize: "0" }}
-                          aria-label="Edit"
-                        >
-                          <Ico n="edit" size={12} color="var(--accent)" />
-                        </button>
-                        <button
-                          onClick={() => handleDel(p.id)}
-                          disabled={deleting === p.id}
-                          className="btn btn-secondary"
-                          style={{ padding: "4px", fontSize: "0" }}
-                          aria-label="Delete"
-                        >
-                          {deleting === p.id ? (
-                            <Spin size={12} />
-                          ) : (
-                            <Ico n="trash" size={12} color="var(--danger)" />
-                          )}
-                        </button>
+                      <div className="min-w-0">
+                        <div className="font-medium text-primary text-xs truncate">{p.title}</div>
+                        {p.product_type && (
+                          <div className="text-[0.6rem] text-muted truncate">{p.product_type}</div>
+                        )}
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="text-secondary text-xs truncate">{p.vendor || "—"}</div>
+                    <div className="font-semibold text-accent text-xs">{price ? `$${price}` : "—"}</div>
+                    <div className={`text-xs ${inv > 0 ? "text-success" : "text-danger"}`}>{inv}</div>
+                    <div><Badge status={p.status} /></div>
+                    <div className="flex gap-1 justify-end" style={{ minWidth: 92 }}>
+                      <button
+                        onClick={() => setFormMode(p)}
+                        className="btn btn-secondary"
+                        style={{ padding: "4px", fontSize: "0" }}
+                        aria-label="Edit"
+                      >
+                        <Ico n="edit" size={12} color="var(--accent)" />
+                      </button>
+                      <button
+                        onClick={() => handleDel(p.id)}
+                        disabled={deleting === p.id}
+                        className="btn btn-secondary"
+                        style={{ padding: "4px", fontSize: "0" }}
+                        aria-label="Delete"
+                      >
+                        {deleting === p.id ? (
+                          <Spin size={12} />
+                        ) : (
+                          <Ico n="trash" size={12} color="var(--danger)" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 );
-              })}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="p-6 text-center text-muted">
-                    No products
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              }}
+            </FixedSizeList>
+          ) : (
+            <div className="p-6 text-center text-muted">No products</div>
+          )}
+        </div>
+      )}
+
+      {!loading && (
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
+          <div className="text-xs text-muted">
+            {isFetchingAll
+              ? `Loading all products... ${loadedCount} loaded`
+              : `Showing ${pagedProducts.length} of ${productCount} products`}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safeCurrentPage <= 1}
+            >
+              Prev
+            </button>
+            <span className="text-xs text-secondary">
+              Page {safeCurrentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safeCurrentPage >= totalPages}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

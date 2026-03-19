@@ -9,6 +9,8 @@ import CollectionsPage from "./pages/CollectionsPage";
 import InventoryPage from "./pages/InventoryPage";
 import ConnectStore from "./pages/ConnectStore";
 import ExportPage from "./pages/ExportPage";
+import LoginPage from "./pages/LoginPage";
+import { hasSupabaseConfig, supabase } from "./lib/supabaseClient";
 
 export default function App() {
   const [page, setPage] = useState("products");
@@ -16,7 +18,46 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeStore, setActiveStore] = useState(null);
   const [pageKey, setPageKey] = useState(0);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
+  const [user, setUser] = useState(null);
   const { toasts, add, remove } = useToast();
+
+  useEffect(() => {
+    if (!hasSupabaseConfig || !supabase) {
+      setAuthError(
+        "Missing Supabase env config. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+      );
+      setAuthLoading(false);
+      return;
+    }
+
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      // Require explicit sign-in after each app startup.
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+      if (!mounted) return;
+      if (error) {
+        setAuthError(error.message || "Failed to initialize authentication.");
+      }
+      setUser(null);
+      setAuthLoading(false);
+    };
+
+    initializeAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const onResize = () => {
@@ -62,6 +103,77 @@ export default function App() {
     setPageKey((k) => k + 1);
   };
 
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      add(error.message || "Failed to sign out.", "error");
+      return;
+    }
+    add("Signed out successfully.", "success");
+  };
+
+  if (authLoading) {
+    return (
+      <>
+        <GlobalStyles />
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "grid",
+            placeItems: "center",
+            color: "var(--text-secondary)",
+            fontWeight: 600,
+          }}
+        >
+          Checking authentication...
+        </div>
+      </>
+    );
+  }
+
+  if (authError) {
+    return (
+      <>
+        <GlobalStyles />
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "grid",
+            placeItems: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 560,
+              width: "100%",
+              border: "1px solid rgba(239,68,68,0.4)",
+              borderRadius: 12,
+              background: "rgba(239,68,68,0.1)",
+              color: "#fecaca",
+              padding: 18,
+            }}
+          >
+            <h2 style={{ marginBottom: 8, fontSize: "1.2rem" }}>
+              Authentication setup required
+            </h2>
+            <p style={{ lineHeight: 1.45 }}>{authError}</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <GlobalStyles />
+        <LoginPage />
+      </>
+    );
+  }
+
   return (
     <>
       <GlobalStyles />
@@ -75,6 +187,8 @@ export default function App() {
           onClose={() => setIsSidebarOpen(false)}
           activeStore={activeStore}
           setActiveStore={setActiveStore}
+          userEmail={user?.email}
+          onSignOut={handleSignOut}
         />
         {isMobile && isSidebarOpen && (
           <button

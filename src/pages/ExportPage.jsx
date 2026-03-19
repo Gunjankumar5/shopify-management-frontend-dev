@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Ico, Spin } from "../components/Icons"; // adjust path if needed
+import { authFetch } from "../lib/authFetch";
 
 // ─── CDN libs ─────────────────────────────────────────────────────────────────
 const HOT_CSS =
@@ -67,6 +68,39 @@ const LOAD_STEPS = [
   "Fetching inventory & collections",
   "Preparing grid",
 ];
+
+const IMAGE_PREVIEW_COLUMN = "Image Preview";
+const IMAGE_URL_COLUMN = "Image URLs";
+const ALWAYS_VISIBLE_COLUMNS = [
+  "SEO Title",
+  "SEO Description",
+  "Product Metafields",
+  "Collection Metafields",
+];
+
+function withImageColumnsFirst(keys) {
+  if (!Array.isArray(keys) || !keys.length) return [];
+  const ordered = [...keys].filter((k) => k !== IMAGE_PREVIEW_COLUMN);
+  const imageUrlIndex = ordered.indexOf(IMAGE_URL_COLUMN);
+  if (imageUrlIndex >= 0) ordered.splice(imageUrlIndex, 1);
+  ordered.unshift(IMAGE_PREVIEW_COLUMN);
+  if (imageUrlIndex >= 0) ordered.splice(1, 0, IMAGE_URL_COLUMN);
+  return ordered;
+}
+
+function persistedColumns(cols) {
+  return (cols || []).filter((c) => c !== IMAGE_PREVIEW_COLUMN);
+}
+
+function collectGridKeys(rows) {
+  const keySet = new Set();
+  (rows || []).forEach((row) => {
+    if (!row || typeof row !== "object") return;
+    Object.keys(row).forEach((k) => keySet.add(k));
+  });
+  ALWAYS_VISIBLE_COLUMNS.forEach((k) => keySet.add(k));
+  return Array.from(keySet);
+}
 
 // ─── Loading overlay (redesigned with global tokens) ─────────────────────────
 function LoadingOverlay({ step, elapsed, isMobile }) {
@@ -366,18 +400,26 @@ const ExportPage = ({ toast, activeStore }) => {
       hotRef.current = null;
     }
 
-    const keys = Object.keys(rows[0]);
+    const sourceKeys = collectGridKeys(rows);
+    const preparedRows = rows.map((r) => {
+      const normalized = Object.fromEntries(sourceKeys.map((k) => [k, r?.[k] ?? ""]));
+      normalized[IMAGE_PREVIEW_COLUMN] = normalized[IMAGE_URL_COLUMN] ?? "";
+      return normalized;
+    });
+
+    const keys = withImageColumnsFirst(Object.keys(preparedRows[0] || {}));
     gridCols.current = keys;
 
     const columns = keys.map((key) => {
-      if (key === "Image URLs") {
+      if (key === IMAGE_PREVIEW_COLUMN) {
         return {
           data: key,
           readOnly: true,
           renderer: function (instance, td, row, col, prop, value) {
             td.innerHTML = "";
             td.style.cssText = "padding:2px 4px;overflow:hidden;";
-            const urls = String(value || "")
+            const sourceUrls = instance.getDataAtRowProp(row, IMAGE_URL_COLUMN);
+            const urls = String(sourceUrls || "")
               .split(",")
               .map((u) => u.trim())
               .filter(Boolean);
@@ -415,7 +457,7 @@ const ExportPage = ({ toast, activeStore }) => {
     });
 
     hotRef.current = new HOT(containerRef.current, {
-      data: rows,
+      data: preparedRows,
       columns,
       colHeaders: keys,
       rowHeaders: true,
@@ -429,12 +471,14 @@ const ExportPage = ({ toast, activeStore }) => {
       contextMenu: true,
       manualColumnResize: true,
       manualColumnMove: true,
+      fixedColumnsStart: 0,
       autoWrapRow: true,
       wordWrap: false,
       rowHeight: 44,
       colWidths: (i) => {
         const k = keys[i];
-        if (k === "Image URLs") return 140;
+        if (k === IMAGE_PREVIEW_COLUMN) return 140;
+        if (k === IMAGE_URL_COLUMN) return 220;
         if (k === "Title") return 220;
         if (k === "Body (HTML)" || k === "SEO Description") return 160;
         if (k === "Tags") return 180;
@@ -446,7 +490,7 @@ const ExportPage = ({ toast, activeStore }) => {
         const status = syncResults.current[row];
         if (status && STATUS_COLORS[status])
           return { className: `s-${status}` };
-        if (READONLY_COLS.has(key) || key === "Image URLs")
+        if (READONLY_COLS.has(key) || key === IMAGE_PREVIEW_COLUMN)
           return { className: "ro-cell" };
         const hot = hotRef.current;
         if (hot) {
@@ -484,9 +528,9 @@ const ExportPage = ({ toast, activeStore }) => {
       },
     });
 
-    rowsRef.current = rows;
+    rowsRef.current = preparedRows;
     setHasData(true);
-    setRowCount(rows.length);
+    setRowCount(preparedRows.length);
     setChangedCount(0);
     setSyncState(null);
     syncResults.current = {};
@@ -506,7 +550,7 @@ const ExportPage = ({ toast, activeStore }) => {
       setTimeout(() => setLoadStep(i + 2), d),
     );
     try {
-      const res = await fetch(`${API_BASE_URL}/export/json`);
+      const res = await authFetch(`${API_BASE_URL}/export/json`);
       if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
       const data = await res.json();
       setLoadStep(5);
@@ -571,7 +615,10 @@ const ExportPage = ({ toast, activeStore }) => {
     if (!window.XLSX || !hotRef.current) return;
     try {
       const data = hotRef.current.getData();
-      const ws = window.XLSX.utils.aoa_to_sheet([gridCols.current, ...data]);
+      const cols = persistedColumns(gridCols.current);
+      const colIndexes = cols.map((h) => gridCols.current.indexOf(h));
+      const outputRows = data.map((r) => colIndexes.map((i) => r[i] ?? ""));
+      const ws = window.XLSX.utils.aoa_to_sheet([cols, ...outputRows]);
       const wb = window.XLSX.utils.book_new();
       window.XLSX.utils.book_append_sheet(wb, ws, "Products");
       window.XLSX.writeFile(
@@ -642,14 +689,16 @@ const ExportPage = ({ toast, activeStore }) => {
   const handleSync = useCallback(async () => {
     if (!hotRef.current || syncing) return;
     const data = hotRef.current.getData();
+    const cols = persistedColumns(gridCols.current);
+    const colIndexes = cols.map((h) => gridCols.current.indexOf(h));
     const rows = data.map((r) =>
-      Object.fromEntries(gridCols.current.map((h, i) => [h, r[i] ?? ""])),
+      Object.fromEntries(cols.map((h, i) => [h, r[colIndexes[i]] ?? ""])),
     );
     setSyncing(true);
     setSyncState({ results: {} });
     syncResults.current = {};
     try {
-      const startRes = await fetch(`${API_BASE_URL}/export/sync`, {
+      const startRes = await authFetch(`${API_BASE_URL}/export/sync`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

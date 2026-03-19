@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { authFetch } from "../lib/authFetch";
 
 const rawApiOrigin = (import.meta.env.VITE_API_ORIGIN || "")
   .trim()
@@ -184,7 +185,7 @@ export default function ConnectStore({ onConnected }) {
         api_key: form.api_key.trim(),
         api_secret: form.api_secret.trim(),
       };
-      const res = await fetch(`${API}/auth/connect`, {
+      const res = await authFetch(`${API}/auth/connect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

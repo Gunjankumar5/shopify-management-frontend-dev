@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Ico, Spin } from "../components/Icons";
 import AddCollectionPage from "./AddcollectionPage";
+import { authFetch } from "../lib/authFetch";
 
 export default function CollectionsPage({ toast }) {
   const [collections, setCollections] = useState([]);
@@ -18,7 +19,7 @@ export default function CollectionsPage({ toast }) {
   async function fetchCollections() {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/collections/`);
+      const res = await authFetch(`${API_BASE_URL}/collections/`);
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setCollections(data.custom_collections || []);

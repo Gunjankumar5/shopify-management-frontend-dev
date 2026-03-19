@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Ico } from "./Icons";
 import { API_BASE_URL } from "../api/config";
+import { authFetch } from "../lib/authFetch";
 
 const colors = {
   bgPrimary: "#0A0A0A",
@@ -21,6 +22,8 @@ const Sidebar = ({
   onClose,
   activeStore,
   setActiveStore,
+  userEmail,
+  onSignOut,
 }) => {
   const [stores, setStores] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -28,7 +31,7 @@ const Sidebar = ({
 
   const fetchStores = async () => {
     try {
-      const r = await fetch(`${API_BASE_URL}/auth/stores`);
+      const r = await authFetch(`${API_BASE_URL}/auth/stores`);
       if (!r.ok) return;
       const data = await r.json();
       const nextStores = data.stores || [];
@@ -38,6 +41,9 @@ const Sidebar = ({
         nextStores.find((s) => s.is_active) || nextStores[0] || null;
       if (!active) {
         setActiveStore(null);
+        if (page !== "connect") {
+          setPage("connect");
+        }
         return;
       }
       if (!activeStore || activeStore.shop_key !== active.shop_key) {
@@ -62,7 +68,7 @@ const Sidebar = ({
 
   const switchStore = async (shop_key) => {
     try {
-      const r = await fetch(`${API_BASE_URL}/auth/active-store/${shop_key}`, {
+      const r = await authFetch(`${API_BASE_URL}/auth/active-store/${shop_key}`, {
         method: "POST",
       });
       if (!r.ok) return;
@@ -83,7 +89,7 @@ const Sidebar = ({
     e.stopPropagation();
     if (!window.confirm(`Disconnect ${shop_key}?`)) return;
     try {
-      await fetch(`${API_BASE_URL}/auth/stores/${shop_key}`, {
+      await authFetch(`${API_BASE_URL}/auth/stores/${shop_key}`, {
         method: "DELETE",
       });
       await fetchStores();
@@ -432,6 +438,58 @@ const Sidebar = ({
             </div>
           </div>
         )}
+      </div>
+
+      <div
+        style={{
+          padding: "12px",
+          borderTop: `1px solid ${colors.border}`,
+          background: "rgba(255,255,255,0.01)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            color: colors.textMuted,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            marginBottom: 6,
+          }}
+        >
+          Signed In
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            color: colors.textPrimary,
+            marginBottom: 10,
+            overflowWrap: "anywhere",
+          }}
+        >
+          {userEmail || "Unknown user"}
+        </div>
+        <button
+          type="button"
+          onClick={onSignOut}
+          style={{
+            width: "100%",
+            borderRadius: 8,
+            border: `1px solid ${colors.border}`,
+            background: "transparent",
+            color: colors.textMuted,
+            cursor: "pointer",
+            padding: "10px 12px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          <Ico n="logout" size={16} />
+          Sign out
+        </button>
       </div>
     </aside>
   );

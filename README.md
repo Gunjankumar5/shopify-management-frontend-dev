@@ -56,11 +56,22 @@ Switch between dev and prod by commenting/uncommenting:
 # Dev (local backend)
 VITE_API_ORIGIN=http://127.0.0.1:8000
 
+# Supabase (required for login)
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+
 # Prod (Railway backend)
 # VITE_API_ORIGIN=https://shopifymanagerbackend-production-b50f.up.railway.app
 ```
 
 If `VITE_API_ORIGIN` is not set, it defaults to `http://127.0.0.1:8000`.
+
+## Authentication
+
+- The app now uses Supabase email/password authentication.
+- When signed out, users see a dedicated login page.
+- New users can sign up from the login page and confirm by email (if email confirmation is enabled in Supabase).
+- After signing in, users can sign out from the sidebar.
 
 ## Getting Started
 
