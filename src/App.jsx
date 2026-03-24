@@ -10,7 +10,9 @@ import InventoryPage from "./pages/InventoryPage";
 import ConnectStore from "./pages/ConnectStore";
 import ExportPage from "./pages/ExportPage";
 import LoginPage from "./pages/LoginPage";
+import UserManagementPage from "./pages/UserManagementPage";
 import { hasSupabaseConfig, supabase } from "./lib/supabaseClient";
+import MetafieldsPage from "./pages/MetafieldsPage";
 
 export default function App() {
   const [page, setPage] = useState("products");
@@ -35,13 +37,18 @@ export default function App() {
     let mounted = true;
 
     const initializeAuth = async () => {
-      // Require explicit sign-in after each app startup.
-      const { error } = await supabase.auth.signOut({ scope: "local" });
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
       if (!mounted) return;
       if (error) {
         setAuthError(error.message || "Failed to initialize authentication.");
+        setUser(null);
+      } else {
+        setAuthError("");
+        setUser(session?.user || null);
       }
-      setUser(null);
       setAuthLoading(false);
     };
 
@@ -148,10 +155,10 @@ export default function App() {
             style={{
               maxWidth: 560,
               width: "100%",
-              border: "1px solid rgba(239,68,68,0.4)",
+              border: "1px solid var(--danger)",
               borderRadius: 12,
-              background: "rgba(239,68,68,0.1)",
-              color: "#fecaca",
+              background: "var(--danger-light)",
+              color: "var(--danger)",
               padding: 18,
             }}
           >
@@ -214,7 +221,11 @@ export default function App() {
           )}
 
           {page === "products" && (
-            <ProductsPage key={`products-${pageKey}`} toast={add} />
+            <ProductsPage
+              key={`products-${pageKey}`}
+              toast={add}
+              activeStore={activeStore}
+            />
           )}
           {page === "upload" && (
             <UploadPage key={`upload-${pageKey}`} toast={add} />
@@ -232,8 +243,22 @@ export default function App() {
               activeStore={activeStore}
             />
           )}
+          {page === "metafields" && (
+            <MetafieldsPage
+              key={`metafields-${pageKey}`}
+              toast={add}
+              activeStore={activeStore}
+            />
+          )}
           {page === "connect" && (
             <ConnectStore onConnected={handleStoreConnected} />
+          )}
+          {page === "users" && (
+            <UserManagementPage
+              key={`users-${pageKey}`}
+              activeStore={activeStore}
+              userEmail={user?.email}
+            />
           )}
         </main>
       </div>

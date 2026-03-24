@@ -54,8 +54,7 @@ const versions = ["2026-01", "2025-10", "2025-07", "2025-04"];
 
 // Panel style with fallbacks for CSS variables
 const panelStyle = {
-  background:
-    "linear-gradient(180deg, rgba(28,28,34,0.92), rgba(16,16,20,0.96))",
+  background: "var(--panel-gradient)",
   border: "1px solid var(--border-strong, #2a2a35)",
   borderRadius: 24,
   boxShadow: "0 24px 80px rgba(0,0,0,0.35)",
@@ -109,10 +108,10 @@ function Stat({ label, value }) {
   return (
     <div
       style={{
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--panel-overlay-light)",
         borderRadius: 16,
         padding: "14px 16px",
-        background: "rgba(255,255,255,0.03)",
+        background: "var(--panel-overlay-very-subtle)",
         minWidth: 0,
       }}
     >
@@ -251,8 +250,7 @@ export default function ConnectStore({ onConnected }) {
               width: 220,
               height: 220,
               borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(16,185,129,0.32), rgba(16,185,129,0))",
+              background: "var(--success-gradient)",
             }}
           />
           <div
@@ -262,10 +260,9 @@ export default function ConnectStore({ onConnected }) {
               borderRadius: 20,
               display: "grid",
               placeItems: "center",
-              background:
-                "linear-gradient(135deg, rgba(16,185,129,0.18), rgba(99,102,241,0.18))",
-              border: "1px solid rgba(16,185,129,0.28)",
-              color: "#34d399",
+              background: "var(--success-icon-gradient)",
+              border: "1px solid var(--success-icon-border)",
+              color: "var(--success-text)",
               fontSize: 30,
               marginBottom: 18,
             }}
@@ -279,7 +276,7 @@ export default function ConnectStore({ onConnected }) {
                 fontWeight: 700,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#34d399",
+                color: "var(--success-text)",
               }}
             >
               Store Ready
@@ -332,12 +329,14 @@ export default function ConnectStore({ onConnected }) {
                 padding: "14px 16px",
                 borderRadius: 16,
                 background: success.auto_sync.success
-                  ? "rgba(16,185,129,0.09)"
-                  : "rgba(239,68,68,0.08)",
+                  ? "var(--success-light)"
+                  : "var(--error-bg-light)",
                 border: success.auto_sync.success
-                  ? "1px solid rgba(16,185,129,0.2)"
-                  : "1px solid rgba(239,68,68,0.2)",
-                color: success.auto_sync.success ? "#6ee7b7" : "#fca5a5",
+                  ? "1px solid var(--success-border-light)"
+                  : "1px solid var(--error-border)",
+                color: success.auto_sync.success
+                  ? "var(--success-text-light)"
+                  : "var(--error-text-light)",
               }}
             >
               {success.auto_sync.success
@@ -400,7 +399,7 @@ export default function ConnectStore({ onConnected }) {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor =
-                  "rgba(255,255,255,0.05)";
+                  "var(--panel-overlay-subtle)";
                 e.currentTarget.style.borderColor = "var(--accent, #6366f1)";
               }}
               onMouseLeave={(e) => {
@@ -448,7 +447,7 @@ export default function ConnectStore({ onConnected }) {
           box-sizing: border-box;
           border-radius: 14px;
           border: 1px solid var(--border-strong, #2a2a35);
-          background: rgba(255,255,255,0.03);
+          background: var(--panel-overlay-very-subtle);
           color: var(--text-primary, #f3f4f6);
           outline: none;
           transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
@@ -460,8 +459,8 @@ export default function ConnectStore({ onConnected }) {
         .connect-input:focus,
         .connect-select:focus {
           border-color: var(--accent, #6366f1);
-          box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
-          background: rgba(255,255,255,0.05);
+          box-shadow: var(--shadow-focus);
+          background: var(--panel-overlay-subtle);
         }
         .connect-select {
           appearance: none;
@@ -479,14 +478,14 @@ export default function ConnectStore({ onConnected }) {
           min-width: 0;
           border-radius: 14px;
           border: 1px solid var(--border-strong, #2a2a35);
-          background: rgba(255,255,255,0.03);
+          background: var(--panel-overlay-very-subtle);
           overflow: hidden;
           transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
         }
         .connect-store-input:focus-within {
           border-color: var(--accent, #6366f1);
-          box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
-          background: rgba(255,255,255,0.05);
+          box-shadow: var(--shadow-focus);
+          background: var(--panel-overlay-subtle);
         }
         .connect-store-input .connect-input {
           border: 0;
@@ -505,8 +504,8 @@ export default function ConnectStore({ onConnected }) {
           color: var(--text-muted, #9ca3af);
           font-size: 13px;
           white-space: nowrap;
-          border-left: 1px solid rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.03);
+          border-left: 1px solid var(--panel-overlay-light);
+          background: var(--panel-overlay-very-subtle);
           height: 100%;
           display: inline-flex;
           align-items: center;
@@ -521,7 +520,7 @@ export default function ConnectStore({ onConnected }) {
           }
           .connect-store-suffix {
             border-left: 0;
-            border-top: 1px solid rgba(255,255,255,0.08);
+            border-top: 1px solid var(--panel-overlay-light);
             justify-content: flex-start;
             padding: 10px 14px;
           }
@@ -549,8 +548,7 @@ export default function ConnectStore({ onConnected }) {
               width: 240,
               height: 240,
               borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(99,102,241,0.28), rgba(99,102,241,0))",
+              background: "var(--accent-gradient-bg)",
             }}
           />
           <div
@@ -561,8 +559,7 @@ export default function ConnectStore({ onConnected }) {
               width: 220,
               height: 220,
               borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(168,85,247,0.16), rgba(168,85,247,0))",
+              background: "var(--purple-gradient-bg)",
             }}
           />
 
@@ -574,8 +571,8 @@ export default function ConnectStore({ onConnected }) {
                 gap: 8,
                 padding: "8px 12px",
                 borderRadius: 999,
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                background: "var(--panel-overlay-subtle)",
+                border: "1px solid var(--panel-overlay-light)",
                 color: "var(--text-secondary, #9ca3af)",
                 fontSize: 12,
                 fontWeight: 700,
@@ -634,8 +631,8 @@ export default function ConnectStore({ onConnected }) {
               style={{
                 borderRadius: 18,
                 padding: "18px 18px 16px",
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: "rgba(255,255,255,0.03)",
+                border: "1px solid var(--panel-overlay-light)",
+                background: "var(--panel-overlay-very-subtle)",
               }}
             >
               <div
@@ -663,7 +660,7 @@ export default function ConnectStore({ onConnected }) {
                       color: "var(--text-secondary, #9ca3af)",
                     }}
                   >
-                    <span style={{ color: "#818cf8" }}>+</span>
+                    <span style={{ color: "var(--accent-text)" }}>+</span>
                     <span>{item}</span>
                   </div>
                 ))}
@@ -688,7 +685,7 @@ export default function ConnectStore({ onConnected }) {
                 fontWeight: 700,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#818cf8",
+                color: "var(--accent-text)",
               }}
             >
               Connect Store
@@ -713,8 +710,8 @@ export default function ConnectStore({ onConnected }) {
           <div
             style={{
               borderRadius: 18,
-              border: "1px solid rgba(99,102,241,0.18)",
-              background: "rgba(99,102,241,0.08)",
+              border: "1px solid var(--info-box-border)",
+              background: "var(--info-box-bg)",
               padding: "16px 18px",
             }}
           >
@@ -722,13 +719,19 @@ export default function ConnectStore({ onConnected }) {
               style={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: "#c4b5fd",
+                color: "var(--info-box-label)",
                 marginBottom: 6,
               }}
             >
               Where to find them
             </div>
-            <div style={{ fontSize: 13, color: "#ddd6fe", lineHeight: 1.7 }}>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--info-box-text)",
+                lineHeight: 1.7,
+              }}
+            >
               {
                 "Shopify Admin -> Settings -> Apps and sales channels -> Develop apps -> Create app -> Admin API credentials"
               }
@@ -820,7 +823,7 @@ export default function ConnectStore({ onConnected }) {
                     padding: "0 12px",
                     borderRadius: 10,
                     border: "1px solid var(--border-strong, #2a2a35)",
-                    background: "rgba(255,255,255,0.04)",
+                    background: "var(--panel-overlay-minimal)",
                     color: "var(--text-secondary, #9ca3af)",
                     cursor: "pointer",
                     fontWeight: 700,
@@ -828,11 +831,11 @@ export default function ConnectStore({ onConnected }) {
                   }}
                   onMouseEnter={(e) =>
                     (e.currentTarget.style.backgroundColor =
-                      "rgba(255,255,255,0.1)")
+                      "var(--panel-overlay-subtle)")
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.backgroundColor =
-                      "rgba(255,255,255,0.04)")
+                      "var(--panel-overlay-minimal)")
                   }
                   onFocusVisible={(e) =>
                     (e.currentTarget.style.outline = "2px solid #fff")
@@ -866,12 +869,12 @@ export default function ConnectStore({ onConnected }) {
             {error && (
               <div
                 style={{
-                  background: "rgba(239,68,68,0.08)",
-                  border: "1px solid rgba(239,68,68,0.22)",
+                  background: "var(--error-bg-light)",
+                  border: "1px solid var(--error-border-light)",
                   borderRadius: 14,
                   padding: "12px 14px",
                   fontSize: 13,
-                  color: "#fca5a5",
+                  color: "var(--error-text-light)",
                   display: "flex",
                   gap: 8,
                   alignItems: "center",
@@ -903,7 +906,7 @@ export default function ConnectStore({ onConnected }) {
                 fontSize: 15,
                 fontWeight: 800,
                 background: loading
-                  ? "rgba(255,255,255,0.08)"
+                  ? "var(--panel-overlay-light)"
                   : "var(--accent-gradient, linear-gradient(135deg, #6366f1, #8b5cf6))",
                 border: "none",
                 color: loading ? "var(--text-muted, #9ca3af)" : "#fff",
@@ -912,9 +915,7 @@ export default function ConnectStore({ onConnected }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                boxShadow: loading
-                  ? "none"
-                  : "0 18px 40px rgba(99,102,241,0.18)",
+                boxShadow: loading ? "none" : "var(--accent-button-shadow)",
                 transition: "opacity 0.2s ease",
               }}
               onMouseEnter={(e) => {

@@ -58,8 +58,8 @@ export default function CollectionsPage({ toast }) {
   const getImageSrc = (c) => c?.image?.src || "";
 
   const TYPE_COLORS = {
-    custom: { bg: "rgba(59,130,246,.12)", color: "#60a5fa" },
-    smart: { bg: "rgba(139,92,246,.12)", color: "#a78bfa" },
+    custom: { bg: "var(--info-light)", color: "var(--color-blue)" },
+    smart: { bg: "var(--color-purple-light)", color: "var(--color-purple)" },
   };
 
   return (
@@ -100,7 +100,7 @@ export default function CollectionsPage({ toast }) {
             className="btn btn-primary flex items-center gap-2"
             style={{
               background: "var(--accent-gradient)",
-              boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
+              boxShadow: "var(--shadow-accent)",
             }}
           >
             <Ico n="plus" size={14} />

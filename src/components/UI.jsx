@@ -4,19 +4,19 @@ import { Ico } from "./Icons";
 export const Badge = ({ status }) => {
   const styles = {
     active: {
-      bg: "rgba(16,185,129,0.15)",
+      bg: "var(--success-light)",
       color: "var(--success)",
-      border: "rgba(16,185,129,0.3)",
+      border: "var(--success-border)",
     },
     draft: {
-      bg: "rgba(245,158,11,0.15)",
+      bg: "var(--warning-light)",
       color: "var(--warning)",
-      border: "rgba(245,158,11,0.3)",
+      border: "var(--warning-border)",
     },
     archived: {
-      bg: "rgba(107,114,128,0.15)",
-      color: "#6b7280",
-      border: "rgba(107,114,128,0.3)",
+      bg: "var(--bg-overlay-light)",
+      color: "var(--gray-color)",
+      border: "var(--gray-border)",
     },
   };
   const s = styles[status] || styles.draft;
@@ -121,7 +121,7 @@ export const PageLoadingOverlay = ({
         padding: 24,
         textAlign: "center",
         border: "1px solid var(--border-strong)",
-        boxShadow: "0 18px 48px rgba(0,0,0,0.35)",
+        boxShadow: "var(--shadow-xl)",
       }}
     >
       <div

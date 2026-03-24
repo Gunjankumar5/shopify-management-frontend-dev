@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
 import { PageLoadingOverlay } from "../components/UI";
+import MetafieldsPanel from "../components/MetafieldsPanel";
 
 function useViewportWidth() {
   const [width, setWidth] = useState(() => window.innerWidth);
@@ -1924,6 +1925,20 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
               )}
             </CardBody>
           </Card>
+
+          {isEdit && editCollection?.id && (
+            <Card>
+              <CardTitle>Metafields</CardTitle>
+              <CardBody>
+                <MetafieldsPanel
+                  resource="collections"
+                  resourceId={editCollection.id}
+                  resourceName={title}
+                  toast={toast}
+                />
+              </CardBody>
+            </Card>
+          )}
 
           {/* SEO */}
           <SeoSection

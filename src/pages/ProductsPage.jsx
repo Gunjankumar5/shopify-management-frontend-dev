@@ -5,9 +5,8 @@ import { Badge } from "../components/UI";
 import { PriceModal } from "../components/Modals";
 import ProductCard from "../components/ProductCard";
 import AddProductPage from "./Addproductpage";
-import { FixedSizeGrid, FixedSizeList } from "react-window";
 
-const ProductsPage = ({ toast }) => {
+const ProductsPage = ({ toast, activeStore }) => {
   const CLIENT_PAGE_SIZE = 50;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +14,7 @@ const ProductsPage = ({ toast }) => {
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusF, setStatusF] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
   const [sel, setSel] = useState(new Set());
   const [priceM, setPriceM] = useState(false);
   const [deleting, setDeleting] = useState(null);
@@ -29,6 +29,15 @@ const ProductsPage = ({ toast }) => {
 
   const loadAllProducts = useCallback(
     async ({ force = false } = {}) => {
+      if (!activeStore?.shop_key) {
+        setProducts([]);
+        setLoadedCount(0);
+        setCurrentPage(1);
+        setIsFetchingAll(false);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setIsFetchingAll(true);
       setProducts([]);
@@ -69,7 +78,7 @@ const ProductsPage = ({ toast }) => {
         setLoading(false);
       }
     },
-    [statusF, searchQuery, toast],
+    [statusF, searchQuery, toast, activeStore?.shop_key],
   );
 
   useEffect(() => {
@@ -91,9 +100,47 @@ const ProductsPage = ({ toast }) => {
   useEffect(() => {
     setSel(new Set());
     loadAllProducts({ force: true });
-  }, [statusF, searchQuery, loadAllProducts]);
+  }, [statusF, searchQuery, activeStore?.shop_key, loadAllProducts]);
 
-  const filtered = products;
+  const filtered = useMemo(() => {
+    let sorted = [...products];
+
+    // Apply sorting
+    switch (sortBy) {
+      case "newest":
+        sorted.sort((a, b) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateB - dateA;
+        });
+        break;
+      case "updated":
+        sorted.sort((a, b) => {
+          const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+          const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+          return dateB - dateA;
+        });
+        break;
+      case "oldest":
+        sorted.sort((a, b) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateA - dateB;
+        });
+        break;
+      case "name_asc":
+        sorted.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+        break;
+      case "name_desc":
+        sorted.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
+        break;
+      default:
+        break;
+    }
+
+    return sorted;
+  }, [products, sortBy]);
+
   const productCount = filtered.length;
   const totalPages = Math.max(1, Math.ceil(productCount / CLIENT_PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -119,7 +166,12 @@ const ProductsPage = ({ toast }) => {
 
   const gridGap = 12;
   const gridContainerWidth = Math.max(320, viewportW - 360);
-  const gridItemWidth = Math.max(180, Math.floor((gridContainerWidth - gridGap * (gridColumns + 1)) / gridColumns));
+  const gridItemWidth = Math.max(
+    180,
+    Math.floor(
+      (gridContainerWidth - gridGap * (gridColumns + 1)) / gridColumns,
+    ),
+  );
   const gridItemHeight = 395;
   const gridRows = Math.ceil(pagedProducts.length / gridColumns);
   const virtualHeight = Math.max(320, Math.min(760, viewportH - 360));
@@ -147,9 +199,9 @@ const ProductsPage = ({ toast }) => {
 
   const selAll = () =>
     setSel(
-      sel.size === pagedProducts.length
+      sel.size === filtered.length
         ? new Set()
-        : new Set(pagedProducts.map((p) => p.id)),
+        : new Set(filtered.map((p) => p.id)),
     );
 
   const handleDel = async (id) => {
@@ -242,7 +294,7 @@ const ProductsPage = ({ toast }) => {
 
   return (
     <div
-      className="fade-up container max-w-7xl mx-auto px-4 py-8"
+      className="fade-up container max-w-7xl mx-auto px-4 pt-4"
       style={{ position: "relative", minHeight: "calc(100vh - 120px)" }}
     >
       {priceM && (
@@ -254,17 +306,29 @@ const ProductsPage = ({ toast }) => {
       )}
 
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="font-display text-2xl font-bold text-primary flex items-center gap-2">
+      <div style={{ marginBottom: 28 }}>
+        <h1
+          className="font-display text-3xl font-bold flex items-center gap-3"
+          style={{
+            paddingTop: "16px",
+            color: "var(--text-primary)",
+          }}
+        >
           <Ico n="products" size="lg" /> Products
         </h1>
-        <p className="text-muted text-xs mt-0.5">
+        <p
+          style={{
+            color: "var(--text-muted)",
+            fontSize: "13px",
+            marginTop: "8px",
+          }}
+        >
           Manage your Shopify product catalog
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         {[
           {
             label: "Total",
@@ -285,21 +349,44 @@ const ProductsPage = ({ toast }) => {
             icon: "edit",
           },
         ].map((s) => (
-          <div key={s.label} className="card flex items-center gap-2 p-2">
+          <div
+            key={s.label}
+            className="card flex items-center gap-3 p-4 rounded-xl transition-all hover:shadow-md"
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{
                 backgroundColor: `var(--${s.color}-light)`,
                 color: `var(--${s.color})`,
               }}
             >
-              <Ico n={s.icon} size={16} color={`var(--${s.color})`} />
+              <Ico n={s.icon} size={18} color={`var(--${s.color})`} />
             </div>
             <div>
-              <div className={`font-display text-lg font-bold text-${s.color}`}>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "20px",
+                  fontWeight: "bold",
+                  color: `var(--${s.color})`,
+                  lineHeight: "1.2",
+                }}
+              >
                 {loading ? "—" : s.value}
               </div>
-              <div className="text-muted text-xs">{s.label}</div>
+              <div
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "12px",
+                  marginTop: "2px",
+                }}
+              >
+                {s.label}
+              </div>
             </div>
           </div>
         ))}
@@ -307,39 +394,39 @@ const ProductsPage = ({ toast }) => {
 
       {/* Toolbar */}
       <div
-        className="flex flex-row flex-wrap items-center gap-2 mb-6 p-2 rounded-xl"
+        className="flex flex-row flex-wrap items-center gap-3 p-4 rounded-xl mb-6"
         style={{
-          background: "rgba(26,26,30,0.5)",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-strong)",
           backdropFilter: "blur(8px)",
-          border: "1px solid rgba(58,58,68,0.2)",
         }}
       >
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px] group">
+        <div className="relative flex-1 min-w-[220px] group">
           <div
-            className="absolute left-3 top-1/2 -translate-y-1/2 transition-colors"
+            className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors pointer-events-none"
             style={{ color: "var(--text-muted)" }}
           >
-            <Ico n="search" size={14} />
+            <Ico n="search" size={16} />
           </div>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search products..."
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-lg transition-all outline-none placeholder:text-muted/60"
+            className="w-full pl-11 pr-4 py-2.5 text-sm rounded-lg transition-all outline-none placeholder:text-muted/60"
             style={{
               background: "var(--bg-input)",
-              border: "1px solid transparent",
+              border: "1px solid var(--border-subtle)",
               color: "var(--text-primary)",
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = "var(--accent)";
               e.currentTarget.style.boxShadow =
-                "0 0 0 4px rgba(99,102,241,0.1)";
+                "0 0 0 3px rgba(99,102,241,0.1)";
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = "transparent";
+              e.currentTarget.style.borderColor = "var(--border-subtle)";
               e.currentTarget.style.boxShadow = "none";
             }}
           />
@@ -350,19 +437,19 @@ const ProductsPage = ({ toast }) => {
           <select
             value={statusF}
             onChange={(e) => setStatusF(e.target.value)}
-            className="appearance-none cursor-pointer px-4 py-2 pr-10 text-sm rounded-lg transition-all outline-none"
+            className="appearance-none cursor-pointer px-4 py-2.5 pr-10 text-sm rounded-lg transition-all outline-none font-medium"
             style={{
               background: "var(--bg-input)",
-              border: "1px solid var(--border-strong)",
+              border: "1px solid var(--border-subtle)",
               color: "var(--text-primary)",
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = "var(--accent)";
               e.currentTarget.style.boxShadow =
-                "0 0 0 4px rgba(99,102,241,0.1)";
+                "0 0 0 3px rgba(99,102,241,0.1)";
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = "var(--border-strong)";
+              e.currentTarget.style.borderColor = "var(--border-subtle)";
               e.currentTarget.style.boxShadow = "none";
             }}
           >
@@ -381,7 +468,48 @@ const ProductsPage = ({ toast }) => {
             className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
             style={{ color: "var(--text-muted)" }}
           >
-            <Ico n="chevron-down" size={12} />
+            <Ico n="chevron-down" size={14} />
+          </div>
+        </div>
+
+        {/* Sort dropdown */}
+        <div className="relative">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="appearance-none cursor-pointer px-4 py-2.5 pr-10 text-sm rounded-lg transition-all outline-none font-medium"
+            style={{
+              background: "var(--bg-input)",
+              border: "1px solid var(--border-subtle)",
+              color: "var(--text-primary)",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "var(--accent)";
+              e.currentTarget.style.boxShadow =
+                "0 0 0 3px rgba(99,102,241,0.1)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "var(--border-subtle)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            {[
+              { v: "newest", l: "Newest First" },
+              { v: "updated", l: "Recently Updated" },
+              { v: "oldest", l: "Oldest First" },
+              { v: "name_asc", l: "Name (A-Z)" },
+              { v: "name_desc", l: "Name (Z-A)" },
+            ].map((o) => (
+              <option key={o.v} value={o.v}>
+                {o.l}
+              </option>
+            ))}
+          </select>
+          <div
+            className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: "var(--text-muted)" }}
+          >
+            <Ico n="chevron-down" size={14} />
           </div>
         </div>
 
@@ -389,8 +517,8 @@ const ProductsPage = ({ toast }) => {
         <div
           className="flex p-1 rounded-lg"
           style={{
-            background: "rgba(58,58,68,0.2)",
-            border: "1px solid rgba(58,58,68,0.3)",
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           {[
@@ -400,16 +528,24 @@ const ProductsPage = ({ toast }) => {
             <button
               key={v.id}
               onClick={() => setView(v.id)}
-              className="flex items-center justify-center w-8 h-8 rounded-md transition-all"
+              className="flex items-center justify-center w-9 h-9 rounded-md transition-all font-medium"
               style={{
                 background: view === v.id ? "var(--bg-card)" : "transparent",
                 boxShadow: view === v.id ? "var(--shadow-sm)" : "none",
-                color:
-                  view === v.id ? "var(--text-primary)" : "var(--text-muted)",
+                color: view === v.id ? "var(--accent)" : "var(--text-muted)",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                if (view !== v.id)
+                  e.currentTarget.style.color = "var(--text-primary)";
+              }}
+              onMouseLeave={(e) => {
+                if (view !== v.id)
+                  e.currentTarget.style.color = "var(--text-muted)";
               }}
               aria-label={`${v.id} view`}
             >
-              <Ico n={v.icon} size={14} />
+              <Ico n={v.icon} size={16} />
             </button>
           ))}
         </div>
@@ -421,87 +557,215 @@ const ProductsPage = ({ toast }) => {
               loadAllProducts({ force: true });
             }}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all"
             style={{
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-strong)",
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border-subtle)",
               color: "var(--text-secondary)",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "var(--bg-elevated)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "var(--bg-card)")
-            }
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.currentTarget.style.background = "var(--bg-card)";
+                e.currentTarget.style.color = "var(--text-primary)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--bg-elevated)";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }}
           >
-            {loading ? <Spin size={14} /> : <Ico n="sync" size={14} />}
+            {loading ? <Spin size={16} /> : <Ico n="sync" size={16} />}
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
           <button
             onClick={() => setFormMode(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all active:scale-95"
+            className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-lg transition-all active:scale-95 sm:flex"
             style={{
-              background: "var(--accent-gradient)",
+              background: "linear-gradient(135deg, var(--accent), #a855f7)",
               color: "white",
-              boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
+              boxShadow: "0 4px 15px rgba(99,102,241,0.3)",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow =
+                "0 6px 20px rgba(99,102,241,0.4)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow =
+                "0 4px 15px rgba(99,102,241,0.3)";
+              e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <Ico n="plus" size={14} />
+            <Ico n="plus" size={16} />
             <span>Add Product</span>
+          </button>
+
+          {/* Mobile Add Button */}
+          <button
+            onClick={() => setFormMode(true)}
+            className="sm:hidden flex items-center justify-center w-10 h-10 rounded-lg transition-all active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, var(--accent), #a855f7)",
+              color: "white",
+              boxShadow: "0 4px 15px rgba(99,102,241,0.3)",
+              cursor: "pointer",
+            }}
+          >
+            <Ico n="plus" size={16} />
           </button>
         </div>
       </div>
 
       {/* Bulk Actions */}
       {sel.size > 0 && (
-        <div className="bg-accent-light border border-accent/25 rounded-lg p-2 mb-3 flex flex-wrap items-center gap-2 fade-up">
-          <span className="text-xs font-semibold text-accent">
+        <div
+          className="p-4 mb-4 rounded-lg flex flex-wrap items-center gap-3 fade-up border"
+          style={{
+            background: "var(--accent-light)",
+            borderColor: "var(--accent)/25",
+          }}
+        >
+          <span
+            className="text-sm font-bold"
+            style={{ color: "var(--accent)" }}
+          >
             {sel.size} selected
           </span>
           <div className="flex-1" />
           <button
             onClick={() => setPriceM(true)}
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm flex items-center gap-2 px-3 py-2 rounded-lg transition-all font-medium"
+            style={{
+              background: "rgba(100, 100, 255, 0.1)",
+              color: "var(--accent)",
+              border: "1px solid var(--accent)/25",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(100, 100, 255, 0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(100, 100, 255, 0.1)";
+            }}
           >
-            <Ico n="percent" size="xs" color="var(--accent)" /> Adjust Prices
+            <Ico n="percent" size={14} color="var(--accent)" /> Adjust Prices
           </button>
           <button
             onClick={handleRemoveDuplicates}
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm flex items-center gap-2 px-3 py-2 rounded-lg transition-all font-medium"
+            style={{
+              background: "rgba(255, 193, 7, 0.1)",
+              color: "var(--warning)",
+              border: "1px solid var(--warning)/25",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 193, 7, 0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255, 193, 7, 0.1)";
+            }}
           >
-            <Ico n="percent" size="xs" color="var(--warning)" /> Remove
+            <Ico n="percent" size={14} color="var(--warning)" /> Remove
             Duplicates
           </button>
-          <button onClick={handleBulkDel} className="btn btn-danger btn-sm">
-            <Ico n="trash" size="xs" /> Delete
+          <button
+            onClick={handleBulkDel}
+            className="btn btn-danger btn-sm flex items-center gap-2 px-3 py-2 rounded-lg transition-all font-medium"
+            style={{
+              background: "rgba(239, 68, 68, 0.1)",
+              color: "var(--danger)",
+              border: "1px solid var(--danger)/25",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+            }}
+          >
+            <Ico n="trash" size={14} /> Delete
           </button>
           <button
             onClick={() => setSel(new Set())}
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+            style={{
+              background: "rgba(0, 0, 0, 0.05)",
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border-subtle)",
+              cursor: "pointer",
+              padding: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(0, 0, 0, 0.08)";
+              e.currentTarget.style.color = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(0, 0, 0, 0.05)";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }}
             aria-label="Clear selection"
           >
-            <Ico n="x" size="xs" />
+            <Ico n="x" size={14} />
           </button>
         </div>
       )}
 
       {/* Select All */}
       {filtered.length > 0 && (
-        <div className="flex items-center gap-1.5 mb-2">
+        <div
+          className="flex items-center gap-2 mb-2 p-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer"
+          onClick={() => document.getElementById("selectAll").click()}
+        >
           <input
             type="checkbox"
             className="chk"
-            checked={sel.size === pagedProducts.length && pagedProducts.length > 0}
+            checked={sel.size === filtered.length && filtered.length > 0}
             onChange={selAll}
             id="selectAll"
           />
           <label
             htmlFor="selectAll"
-            className="text-xs text-secondary cursor-pointer"
+            className="text-sm font-medium text-secondary cursor-pointer hover:text-primary transition-colors"
           >
-            Select all {pagedProducts.length} on this page
+            Select all {filtered.length} products
           </label>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && (
+        <div className="flex items-center justify-center gap-4 mb-3">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safeCurrentPage <= 1}
+            className="p-1 rounded-md transition-colors disabled:opacity-40 hover:bg-secondary/40"
+          >
+            <Ico n="chevron-left" size={16} color="var(--text-secondary)" />
+          </button>
+
+          <span className="text-xs text-secondary min-w-fit">
+            Page{" "}
+            <span className="font-semibold text-primary">
+              {safeCurrentPage}
+            </span>{" "}
+            / {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safeCurrentPage >= totalPages}
+            className="p-1 rounded-md transition-colors disabled:opacity-40 hover:bg-secondary/40"
+          >
+            <Ico n="chevron-right" size={16} color="var(--text-secondary)" />
+          </button>
         </div>
       )}
 
@@ -523,56 +787,37 @@ const ProductsPage = ({ toast }) => {
           ))}
         </div>
       ) : view === "grid" ? (
-        <div style={{ width: "100%", overflow: "hidden" }}>
+        <div
+          style={{
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
+            gap: `${gridGap}px`,
+            padding: "12px",
+          }}
+        >
           {pagedProducts.length > 0 ? (
-            <FixedSizeGrid
-              columnCount={gridColumns}
-              columnWidth={gridItemWidth + gridGap}
-              height={virtualHeight}
-              rowCount={gridRows}
-              rowHeight={gridItemHeight + gridGap}
-              width={Math.min(gridContainerWidth + gridGap, viewportW - 40)}
-            >
-              {({ columnIndex, rowIndex, style }) => {
-                const index = rowIndex * gridColumns + columnIndex;
-                const p = pagedProducts[index];
-                if (!p) return null;
-                return (
-                  <div
-                    style={{
-                      ...style,
-                      left: style.left + gridGap,
-                      top: style.top + gridGap,
-                      width: gridItemWidth,
-                      height: gridItemHeight,
-                    }}
-                  >
-                    <ProductCard
-                      p={p}
-                      sel={sel.has(p.id)}
-                      onSel={toggleSel}
-                      onEdit={() => setFormMode(p)}
-                      onDel={handleDel}
-                    />
-                  </div>
-                );
-              }}
-            </FixedSizeGrid>
+            pagedProducts.map((p) => (
+              <ProductCard
+                key={p.id}
+                p={p}
+                sel={sel.has(p.id)}
+                onSel={toggleSel}
+                onEdit={() => setFormMode(p)}
+                onDel={handleDel}
+              />
+            ))
           ) : (
-            <p className="text-muted text-center py-8">No products found</p>
+            <p className="text-muted text-center py-8 col-span-full">
+              No products found
+            </p>
           )}
         </div>
       ) : (
-        <div className="card overflow-x-auto overflow-y-hidden" style={{ height: virtualHeight + 8 }}>
+        <div className="card" style={{ width: "100%" }}>
           {pagedProducts.length > 0 ? (
-            <FixedSizeList
-              height={virtualHeight}
-              itemCount={pagedProducts.length}
-              itemSize={74}
-              width={Math.max(860, Math.min(gridContainerWidth, 1400))}
-            >
-              {({ index, style }) => {
-                const p = pagedProducts[index];
+            <div>
+              {pagedProducts.map((p, index) => {
                 const img = p.images?.[0]?.src;
                 const price = p.variants?.[0]?.price;
                 const inv = p.variants?.reduce(
@@ -581,8 +826,8 @@ const ProductsPage = ({ toast }) => {
                 );
                 return (
                   <div
+                    key={p.id}
                     style={{
-                      ...style,
                       display: "grid",
                       gridTemplateColumns:
                         "34px minmax(220px,1.6fr) minmax(120px,1fr) 90px 70px 90px 92px",
@@ -602,23 +847,44 @@ const ProductsPage = ({ toast }) => {
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-8 h-8 rounded bg-secondary overflow-hidden flex items-center justify-center flex-shrink-0">
                         {img ? (
-                          <img src={img} alt="" className="w-full h-full object-cover" />
+                          <img
+                            src={img}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <Ico n="image" size={12} className="text-muted" />
                         )}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-medium text-primary text-xs truncate">{p.title}</div>
+                        <div className="font-medium text-primary text-xs truncate">
+                          {p.title}
+                        </div>
                         {p.product_type && (
-                          <div className="text-[0.6rem] text-muted truncate">{p.product_type}</div>
+                          <div className="text-[0.6rem] text-muted truncate">
+                            {p.product_type}
+                          </div>
                         )}
                       </div>
                     </div>
-                    <div className="text-secondary text-xs truncate">{p.vendor || "—"}</div>
-                    <div className="font-semibold text-accent text-xs">{price ? `$${price}` : "—"}</div>
-                    <div className={`text-xs ${inv > 0 ? "text-success" : "text-danger"}`}>{inv}</div>
-                    <div><Badge status={p.status} /></div>
-                    <div className="flex gap-1 justify-end" style={{ minWidth: 92 }}>
+                    <div className="text-secondary text-xs truncate">
+                      {p.vendor || "—"}
+                    </div>
+                    <div className="font-semibold text-accent text-xs">
+                      {price ? `$${price}` : "—"}
+                    </div>
+                    <div
+                      className={`text-xs ${inv > 0 ? "text-success" : "text-danger"}`}
+                    >
+                      {inv}
+                    </div>
+                    <div>
+                      <Badge status={p.status} />
+                    </div>
+                    <div
+                      className="flex gap-1 justify-end"
+                      style={{ minWidth: 92 }}
+                    >
                       <button
                         onClick={() => setFormMode(p)}
                         className="btn btn-secondary"
@@ -643,43 +909,42 @@ const ProductsPage = ({ toast }) => {
                     </div>
                   </div>
                 );
-              }}
-            </FixedSizeList>
+              })}
+            </div>
           ) : (
             <div className="p-6 text-center text-muted">No products</div>
           )}
         </div>
       )}
 
+      {/* Pagination - Bottom */}
       {!loading && (
-        <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
-          <div className="text-xs text-muted">
-            {isFetchingAll
-              ? `Loading all products... ${loadedCount} loaded`
-              : `Showing ${pagedProducts.length} of ${productCount} products`}
-          </div>
+        <div className="flex items-center justify-center gap-4 mt-6 pb-4">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={safeCurrentPage <= 1}
+            className="p-1 rounded-md transition-colors disabled:opacity-40 hover:bg-secondary/40"
+          >
+            <Ico n="chevron-left" size={16} color="var(--text-secondary)" />
+          </button>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={safeCurrentPage <= 1}
-            >
-              Prev
-            </button>
-            <span className="text-xs text-secondary">
-              Page {safeCurrentPage} / {totalPages}
-            </span>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safeCurrentPage >= totalPages}
-            >
-              Next
-            </button>
-          </div>
+          <span className="text-xs text-secondary min-w-fit">
+            Page{" "}
+            <span className="font-semibold text-primary">
+              {safeCurrentPage}
+            </span>{" "}
+            / {totalPages}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safeCurrentPage >= totalPages}
+            className="p-1 rounded-md transition-colors disabled:opacity-40 hover:bg-secondary/40"
+          >
+            <Ico n="chevron-right" size={16} color="var(--text-secondary)" />
+          </button>
         </div>
       )}
     </div>

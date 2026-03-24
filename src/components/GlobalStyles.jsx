@@ -48,7 +48,7 @@ const GlobalStyles = () => (
     @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
 
     :root {
-      /* Colors - Core */
+      /* Colors - Core - Dark Theme (default) */
       --bg-primary: #0a0a0c;
       --bg-secondary: #121214;
       --bg-card: #1a1a1e;
@@ -72,14 +72,113 @@ const GlobalStyles = () => (
       --accent: #6366f1;
       --accent-gradient: linear-gradient(135deg, #6366f1, #a855f7);
       --accent-light: rgba(99, 102, 241, 0.15);
+      --accent-overlay-subtle: rgba(99, 102, 241, 0.25);
+      --text-on-accent: #ffffff;
       --success: #10b981;
       --success-light: rgba(16, 185, 129, 0.15);
+      --success-overlay-subtle: rgba(16, 185, 129, 0.18);
+      --success-border: rgba(16, 185, 129, 0.3);
+      --success-text: #34d399;
+      --success-text-light: #6ee7b7;
       --warning: #f59e0b;
       --warning-light: rgba(245, 158, 11, 0.15);
+      --warning-border: rgba(245, 158, 11, 0.3);
+      --warning-text: #fcd34d;
       --danger: #ef4444;
       --danger-light: rgba(239, 68, 68, 0.15);
+      --danger-border: rgba(239, 68, 68, 0.3);
+      --danger-text: #fca5a5;
       --info: #3b82f6;
       --info-light: rgba(59, 130, 246, 0.15);
+
+      /* Additional Colors for UI Components */
+      --color-blue: #60a5fa;
+      --color-blue-light: rgba(96, 165, 250, 0.15);
+      --color-cyan: #2dd4bf;
+      --color-cyan-light: rgba(45, 212, 191, 0.15);
+      --color-purple: #a78bfa;
+      --color-purple-light: rgba(167, 139, 250, 0.15);
+      --color-red: #f87171;
+      --color-red-light: rgba(248, 113, 113, 0.15);
+      --color-pink: #f472b6;
+      --color-pink-light: rgba(244, 114, 182, 0.15);
+
+      /* Subtle background overlays */
+      --accent-subtle: rgba(99, 102, 241, 0.05);
+      --success-subtle: rgba(16, 185, 129, 0.05);
+      --success-bg: rgba(16, 185, 129, 0.08);
+      --success-border: rgba(16, 185, 129, 0.2);
+      --danger-bg: rgba(239, 68, 68, 0.08);
+      --danger-border: rgba(239, 68, 68, 0.2);
+
+      /* Additional shadow effects */
+      --shadow-accent: 0 4px 12px rgba(99, 102, 241, 0.3);
+
+      /* Toast backgrounds */
+      --toast-success-bg: #064e3b;
+      --toast-error-bg: #7f1d1d;
+      --toast-info-bg: #1e3a5f;
+
+      /* Badge borders */
+      --success-border: rgba(16, 185, 129, 0.3);
+      --warning-border: rgba(245, 158, 11, 0.3);
+      --gray-border: rgba(107, 114, 128, 0.3);
+      --gray-color: #6b7280;
+
+      /* Text colors for light backgrounds */
+      --text-on-light: #000000;
+
+      /* Additional shadow effects */
+      --shadow-accent: 0 4px 12px rgba(99, 102, 241, 0.3);
+      --shadow-accent-lg: 0 8px 20px rgba(99, 102, 241, 0.4);
+
+      /* Danger button variants */
+      --danger-border-light: rgba(239, 68, 68, 0.3);
+      --danger-bg-hover: rgba(239, 68, 68, 0.25);
+
+      /* Skeleton gradient */
+      --skeleton-gradient: linear-gradient(90deg, #1e1e24 25%, #2a2a34 50%, #1e1e24 75%);
+
+      /* Connect Store Panel */
+      --panel-gradient: linear-gradient(180deg, rgba(28,28,34,0.92), rgba(16,16,20,0.96));
+      --panel-overlay-light: rgba(255, 255, 255, 0.08);
+      --panel-overlay-subtle: rgba(255, 255, 255, 0.05);
+      --panel-overlay-very-subtle: rgba(255, 255, 255, 0.03);
+      --panel-overlay-minimal: rgba(255, 255, 255, 0.04);
+
+      /* Success accents */
+      --success-gradient: radial-gradient(circle, rgba(16,185,129,0.32), rgba(16,185,129,0));
+      --success-text: #34d399;
+      --success-text-light: #6ee7b7;
+      --success-icon-gradient: linear-gradient(135deg, rgba(16,185,129,0.18), rgba(99,102,241,0.18));
+      --success-icon-border: rgba(16,185,129,0.28);
+      --success-border-light: rgba(16,185,129, 0.2);
+
+      /* Error messages */
+      --error-bg-light: rgba(239, 68, 68, 0.08);
+      --error-border-light: rgba(239, 68, 68, 0.22);
+      --error-text-light: #fca5a5;
+      --error-border: rgba(239, 68, 68, 0.2);
+
+      /* Info box */
+      --info-box-bg: rgba(99, 102, 241, 0.08);
+      --info-box-border: rgba(99, 102, 241, 0.18);
+      --info-box-text: #ddd6fe;
+      --info-box-label: #c4b5fd;
+
+      /* Accent UI elements */
+      --accent-text: #818cf8;
+      --accent-gradient-bg: rgba(99, 102, 241, 0.28);
+      --accent-button-shadow: 0 18px 40px rgba(99, 102, 241, 0.18);
+
+      /* Purple accents */
+      --purple-gradient-bg: rgba(168, 85, 247, 0.16);
+
+      /* Login page */
+      --login-card-dark: rgba(24,24,30,0.97);
+      --login-card-darker: rgba(14,14,20,0.98);
+      --login-left-accent: rgba(99,102,241,0.14);
+      --login-left-success: rgba(16,185,129,0.06);
 
       /* Spacing - fluid scale (base 4px) */
       --space-1: clamp(2px, 0.25vw, 4px);
@@ -114,7 +213,9 @@ const GlobalStyles = () => (
       --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
       --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
       --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+      --shadow-xl: 0 18px 48px rgba(0, 0, 0, 0.35);
       --shadow-focus: 0 0 0 3px var(--accent-light);
+      --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.12);
 
       /* Transitions */
       --transition-fast: 150ms ease;
@@ -135,6 +236,82 @@ const GlobalStyles = () => (
       --breakpoint-lg: 1024px;
       --breakpoint-xl: 1280px;
       --breakpoint-2xl: 1536px;
+    }
+
+    /* Light Theme */
+    [data-theme="light"] {
+      /* Colors - Core - Light Theme */
+      --bg-primary: #f8f8fa;
+      --bg-secondary: #f0f0f2;
+      --bg-card: #ffffff;
+      --bg-elevated: #f5f5f7;
+      --bg-input: #efefef;
+      --bg-overlay: rgba(0, 0, 0, 0.3);
+      --bg-overlay-light: rgba(0, 0, 0, 0.02);
+
+      /* Borders */
+      --border-subtle: #e8e8ec;
+      --border-strong: #d0d0d8;
+
+      /* Text - Darker for better contrast */
+      --text-primary: #0f0f12;
+      --text-secondary: #424250;
+      --text-muted: #757580;
+      --text-inverse: #f0f0f8;
+
+      /* Shadows - lighter for light theme */
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.15);
+
+      /* Light theme Connect Store Panel overrides */
+      --panel-gradient: linear-gradient(180deg, #ffffff, #f9f7ff);
+      --panel-overlay-light: rgba(0, 0, 0, 0.06);
+      --panel-overlay-subtle: rgba(0, 0, 0, 0.035);
+      --panel-overlay-very-subtle: rgba(0, 0, 0, 0.02);
+      --panel-overlay-minimal: rgba(0, 0, 0, 0.03);
+
+      /* Light theme accent UI overrides */
+      --accent-text: #4f46e5;
+      --accent-gradient-bg: rgba(79, 70, 229, 0.12);
+      --accent-button-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+
+      /* Light theme success accents */
+      --success-gradient: radial-gradient(circle, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0));
+      --success-text: #059669;
+      --success-text-light: #047857;
+
+      /* Light theme info box */
+      --info-box-bg: rgba(79, 70, 229, 0.08);
+      --info-box-border: rgba(79, 70, 229, 0.15);
+      --info-box-text: #4338ca;
+      --info-box-label: #6366f1;
+
+      /* Light theme purple accents */
+      --purple-gradient-bg: rgba(139, 92, 246, 0.1);
+
+      /* Light theme login page */
+      --login-card-dark: rgba(248, 248, 250, 0.98);
+      --login-card-darker: rgba(240, 240, 242, 0.98);
+      --login-left-accent: rgba(79, 70, 229, 0.08);
+      --login-left-success: rgba(16, 185, 129, 0.05);
+
+      /* Light theme text on accent */
+      --text-on-accent: #ffffff;
+      --warning-text: #b45309;
+      --danger-text: #b91c1c;
+
+      /* Light theme skeleton */
+      --skeleton-gradient: linear-gradient(90deg, #f0f0f2 25%, #e8e8ec 50%, #f0f0f2 75%);
+    }
+
+    /* Smooth theme transition */
+    html {
+      transition: background-color var(--transition-base), color var(--transition-base);
+    }
+
+    body {
+      transition: background-color var(--transition-base), color var(--transition-base);
     }
 
     /* ----- Base & Typography ----- */
@@ -398,7 +575,6 @@ const GlobalStyles = () => (
       margin-left: 260px;
       width: calc(100vw - 260px);
       min-height: 100vh;
-      padding: var(--space-8) 0;
     }
     .app-sidebar-backdrop {
       position: fixed;
@@ -417,7 +593,7 @@ const GlobalStyles = () => (
       gap: 10px;
       padding: 10px 14px;
       margin-bottom: 10px;
-      background: rgba(18, 18, 20, 0.82);
+      background: var(--bg-secondary);
       border-bottom: 1px solid var(--border-subtle);
       backdrop-filter: blur(8px);
     }
@@ -449,7 +625,6 @@ const GlobalStyles = () => (
       .app-main {
         margin-left: 0;
         width: 100vw;
-        padding: 0 0 var(--space-6);
       }
       .app-sidebar {
         z-index: 1400;
@@ -505,7 +680,7 @@ const GlobalStyles = () => (
     }
     .btn-primary:hover:not(:disabled) {
       opacity: 0.9;
-      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+      box-shadow: var(--shadow-accent-lg);
     }
 
     .btn-secondary {
@@ -522,10 +697,10 @@ const GlobalStyles = () => (
     .btn-danger {
       background: var(--danger-light);
       color: var(--danger);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      border: 1px solid var(--danger-border-light);
     }
     .btn-danger:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.25);
+      background: var(--danger-bg-hover);
       border-color: var(--danger);
     }
 
@@ -581,6 +756,11 @@ const GlobalStyles = () => (
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
+    }
+    .chk:hover:not(:checked), .radio:hover:not(:checked) {
+      border-color: var(--accent);
+      background: var(--accent-light);
     }
     .chk { border-radius: var(--radius-sm); }
     .radio { border-radius: var(--radius-full); }
@@ -593,6 +773,7 @@ const GlobalStyles = () => (
       color: white;
       font-size: 13px;
       line-height: 1;
+      font-weight: 700;
     }
     .radio:checked::after {
       content: '';
@@ -604,6 +785,9 @@ const GlobalStyles = () => (
     .chk:focus-visible, .radio:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
+    }
+    .chk:active, .radio:active {
+      transform: scale(0.95);
     }
 
     /* Switch / Toggle */
@@ -662,7 +846,7 @@ const GlobalStyles = () => (
 
     /* Skeleton loading */
     .skeleton {
-      background: linear-gradient(90deg, #1e1e24 25%, #2a2a34 50%, #1e1e24 75%);
+      background: var(--skeleton-gradient);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
       border-radius: var(--radius-md);

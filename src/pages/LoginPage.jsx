@@ -41,7 +41,10 @@ export default function LoginPage() {
     }
 
     const tick = () => {
-      const remaining = Math.max(0, Math.ceil(cooldownUntil - Date.now() / 1000));
+      const remaining = Math.max(
+        0,
+        Math.ceil(cooldownUntil - Date.now() / 1000),
+      );
       setCooldownSeconds(remaining);
       if (remaining === 0) {
         setCooldownUntil(0);
@@ -66,7 +69,9 @@ export default function LoginPage() {
     setMessage("");
 
     if (!hasSupabaseConfig || !supabase) {
-      setError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+      setError(
+        "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+      );
       return;
     }
 
@@ -98,12 +103,16 @@ export default function LoginPage() {
     setMessage("");
 
     if (isLocked) {
-      setError(`Too many failed attempts. Please wait ${cooldownSeconds}s and try again.`);
+      setError(
+        `Too many failed attempts. Please wait ${cooldownSeconds}s and try again.`,
+      );
       return;
     }
 
     if (!hasSupabaseConfig || !supabase) {
-      setError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+      setError(
+        "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+      );
       return;
     }
 
@@ -114,7 +123,9 @@ export default function LoginPage() {
 
     if (
       mode === "signup" &&
-      (!passwordChecks.length || !passwordChecks.letter || !passwordChecks.number)
+      (!passwordChecks.length ||
+        !passwordChecks.letter ||
+        !passwordChecks.number)
     ) {
       setError("Use a stronger password: 8+ chars with letters and numbers.");
       return;
@@ -146,7 +157,9 @@ export default function LoginPage() {
       if (nextAttempts >= 5) {
         const until = Math.floor(Date.now() / 1000) + 30;
         setCooldownUntil(until);
-        setError("Too many failed attempts. Please wait 30s before trying again.");
+        setError(
+          "Too many failed attempts. Please wait 30s before trying again.",
+        );
       } else {
         setError(e?.message || "Authentication failed.");
       }
@@ -163,7 +176,7 @@ export default function LoginPage() {
         placeItems: "center",
         padding: "24px",
         background:
-          "radial-gradient(1200px 600px at 15% -20%, rgba(99,102,241,0.25), transparent), radial-gradient(1200px 700px at 120% 120%, rgba(16,185,129,0.18), transparent), var(--bg-primary)",
+          "radial-gradient(1200px 600px at 15% -20%, var(--accent-overlay-subtle), transparent), radial-gradient(1200px 700px at 120% 120%, var(--success-overlay-subtle), transparent), var(--bg-primary)",
       }}
     >
       <div
@@ -173,8 +186,8 @@ export default function LoginPage() {
           borderRadius: 18,
           border: "1px solid var(--border-strong)",
           background:
-            "linear-gradient(180deg, rgba(24,24,30,0.97), rgba(14,14,20,0.98))",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
+            "linear-gradient(180deg, var(--login-card-dark), var(--login-card-darker))",
+          boxShadow: "var(--shadow-xl)",
           overflow: "hidden",
           display: "grid",
           gridTemplateColumns: isCompact
@@ -188,7 +201,7 @@ export default function LoginPage() {
             borderRight: isCompact ? "none" : "1px solid var(--border-subtle)",
             borderBottom: isCompact ? "1px solid var(--border-subtle)" : "none",
             background:
-              "linear-gradient(145deg, rgba(99,102,241,0.14), rgba(16,185,129,0.06) 55%, transparent)",
+              "linear-gradient(145deg, var(--login-left-accent), var(--login-left-success) 55%, transparent)",
             display: "grid",
             alignContent: "space-between",
             gap: 24,
@@ -203,7 +216,7 @@ export default function LoginPage() {
                 background: "var(--accent-gradient)",
                 display: "grid",
                 placeItems: "center",
-                color: "#fff",
+                color: "var(--text-on-accent)",
                 marginBottom: 14,
               }}
             >
@@ -226,7 +239,8 @@ export default function LoginPage() {
                 maxWidth: 360,
               }}
             >
-              Secure dashboard access for each store owner. Your account only sees its own connected stores.
+              Secure dashboard access for each store owner. Your account only
+              sees its own connected stores.
             </p>
           </div>
 
@@ -238,16 +252,22 @@ export default function LoginPage() {
               fontSize: 13,
             }}
           >
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <Ico n="check" size={14} color="#6ee7b7" />
+            <div
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              <Ico n="check" size={14} color="var(--success)" />
               Isolated store access per user
             </div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <Ico n="check" size={14} color="#6ee7b7" />
+            <div
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              <Ico n="check" size={14} color="var(--success)" />
               Session handled by Supabase Auth
             </div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <Ico n="check" size={14} color="#6ee7b7" />
+            <div
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              <Ico n="check" size={14} color="var(--success)" />
               Revocable access and secure sign out
             </div>
           </div>
@@ -272,8 +292,14 @@ export default function LoginPage() {
                   border: "none",
                   borderRadius: 8,
                   padding: "9px 12px",
-                  background: mode === "signin" ? "var(--accent-gradient)" : "transparent",
-                  color: mode === "signin" ? "#fff" : "var(--text-secondary)",
+                  background:
+                    mode === "signin"
+                      ? "var(--accent-gradient)"
+                      : "transparent",
+                  color:
+                    mode === "signin"
+                      ? "var(--text-on-accent)"
+                      : "var(--text-secondary)",
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
@@ -287,8 +313,14 @@ export default function LoginPage() {
                   border: "none",
                   borderRadius: 8,
                   padding: "9px 12px",
-                  background: mode === "signup" ? "var(--accent-gradient)" : "transparent",
-                  color: mode === "signup" ? "#fff" : "var(--text-secondary)",
+                  background:
+                    mode === "signup"
+                      ? "var(--accent-gradient)"
+                      : "transparent",
+                  color:
+                    mode === "signup"
+                      ? "var(--text-on-accent)"
+                      : "var(--text-secondary)",
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
@@ -322,6 +354,14 @@ export default function LoginPage() {
                   background: "var(--bg-input)",
                   color: "var(--text-primary)",
                   padding: "12px 14px",
+                  outline: "none",
+                  transition: "border-color 0.2s",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "var(--accent)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border-strong)";
                 }}
               />
             </label>
@@ -353,7 +393,9 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  autoComplete={
+                    mode === "signin" ? "current-password" : "new-password"
+                  }
                   placeholder="Enter your password"
                   style={{
                     width: "100%",
@@ -362,6 +404,14 @@ export default function LoginPage() {
                     color: "var(--text-primary)",
                     padding: "12px 14px",
                     outline: "none",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.parentElement.style.borderColor =
+                      "var(--accent)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.parentElement.style.borderColor =
+                      "var(--border-strong)";
                   }}
                 />
                 <button
@@ -389,13 +439,34 @@ export default function LoginPage() {
                 <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                   Password requirements
                 </div>
-                <div style={{ fontSize: 12, color: passwordChecks.length ? "#6ee7b7" : "var(--text-muted)" }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: passwordChecks.length
+                      ? "var(--success)"
+                      : "var(--text-muted)",
+                  }}
+                >
                   {passwordChecks.length ? "✓" : "○"} At least 8 characters
                 </div>
-                <div style={{ fontSize: 12, color: passwordChecks.letter ? "#6ee7b7" : "var(--text-muted)" }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: passwordChecks.letter
+                      ? "var(--success)"
+                      : "var(--text-muted)",
+                  }}
+                >
                   {passwordChecks.letter ? "✓" : "○"} Includes a letter
                 </div>
-                <div style={{ fontSize: 12, color: passwordChecks.number ? "#6ee7b7" : "var(--text-muted)" }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: passwordChecks.number
+                      ? "var(--success)"
+                      : "var(--text-muted)",
+                  }}
+                >
                   {passwordChecks.number ? "✓" : "○"} Includes a number
                 </div>
               </div>
@@ -425,9 +496,9 @@ export default function LoginPage() {
               <div
                 style={{
                   borderRadius: 10,
-                  border: "1px solid rgba(245,158,11,0.4)",
-                  background: "rgba(245,158,11,0.12)",
-                  color: "#fcd34d",
+                  border: "1px solid var(--warning-border)",
+                  background: "var(--warning-light)",
+                  color: "var(--warning-text)",
                   fontSize: 13,
                   padding: "10px 12px",
                   display: "inline-flex",
@@ -444,9 +515,9 @@ export default function LoginPage() {
               <div
                 style={{
                   borderRadius: 10,
-                  border: "1px solid rgba(239,68,68,0.4)",
-                  background: "rgba(239,68,68,0.12)",
-                  color: "#fda4af",
+                  border: "1px solid var(--danger-border)",
+                  background: "var(--danger-light)",
+                  color: "var(--danger-text)",
                   fontSize: 13,
                   padding: "10px 12px",
                 }}
@@ -460,9 +531,9 @@ export default function LoginPage() {
               <div
                 style={{
                   borderRadius: 10,
-                  border: "1px solid rgba(16,185,129,0.4)",
-                  background: "rgba(16,185,129,0.12)",
-                  color: "#6ee7b7",
+                  border: "1px solid var(--success-border)",
+                  background: "var(--success-light)",
+                  color: "var(--success-text)",
                   fontSize: 13,
                   padding: "10px 12px",
                 }}
@@ -481,7 +552,7 @@ export default function LoginPage() {
                 borderRadius: 10,
                 padding: "12px 14px",
                 background: "var(--accent-gradient)",
-                color: "#fff",
+                color: "var(--text-on-accent)",
                 fontWeight: 700,
                 display: "inline-flex",
                 justifyContent: "center",
@@ -491,7 +562,7 @@ export default function LoginPage() {
                 opacity: loading || isLocked ? 0.75 : 1,
               }}
             >
-              {loading && <Spin size={16} color="#fff" />}
+              {loading && <Spin size={16} color="var(--text-on-accent)" />}
               {submitLabel}
             </button>
 
@@ -503,7 +574,8 @@ export default function LoginPage() {
                 textAlign: "center",
               }}
             >
-              By continuing, you agree to secure account access and responsible use of connected store credentials.
+              By continuing, you agree to secure account access and responsible
+              use of connected store credentials.
             </p>
           </div>
         </form>

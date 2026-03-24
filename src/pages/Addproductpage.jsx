@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
 import { PageLoadingOverlay } from "../components/UI";
+import MetafieldsPanel from "../components/MetafieldsPanel";
 
 function useViewportWidth() {
   const [width, setWidth] = useState(() => window.innerWidth);
@@ -987,6 +988,57 @@ function StatusDot({ status }) {
   );
 }
 
+// ── Variant metafields picker ─────────────────────────────────────────────────
+// MUST be defined before AddProductPage uses it
+function VariantMetafieldsPicker({ productVariants, toast }) {
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  return (
+    <div>
+      <div
+        style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}
+      >
+        {productVariants.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            onClick={() =>
+              setSelectedVariant(selectedVariant?.id === v.id ? null : v)
+            }
+            style={{
+              padding: "6px 14px",
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: "inherit",
+              cursor: "pointer",
+              transition: "all .15s",
+              background:
+                selectedVariant?.id === v.id
+                  ? "var(--accent-light)"
+                  : "transparent",
+              border: `1px solid ${
+                selectedVariant?.id === v.id ? C.accent : C.border
+              }`,
+              color: selectedVariant?.id === v.id ? C.accent : C.muted,
+            }}
+          >
+            {v.title}
+            {v.sku ? ` · ${v.sku}` : ""}
+          </button>
+        ))}
+      </div>
+      {selectedVariant && (
+        <MetafieldsPanel
+          resource="variants"
+          resourceId={selectedVariant.id}
+          resourceName={selectedVariant.title}
+          toast={toast}
+        />
+      )}
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────
 let _varId = 0;
 function newVariant(name = "", price = "", sku = "", extra = {}) {
@@ -1452,7 +1504,6 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               </Field>
             </CardBody>
           </Card>
-
           {/* Media */}
           <Card>
             <CardTitle>Media</CardTitle>
@@ -1460,7 +1511,6 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               <MediaUpload files={mediaFiles} setFiles={setMediaFiles} />
             </CardBody>
           </Card>
-
           {/* Pricing */}
           <Card>
             <CardTitle>Pricing</CardTitle>
@@ -1564,7 +1614,6 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               </div>
             </CardBody>
           </Card>
-
           {/* Inventory */}
           <Card>
             <CardTitle>Inventory</CardTitle>
@@ -1659,7 +1708,6 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               )}
             </CardBody>
           </Card>
-
           {/* Shipping */}
           <Card>
             <CardTitle>Shipping</CardTitle>
@@ -1736,7 +1784,6 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               )}
             </CardBody>
           </Card>
-
           {/* Variants */}
           <Card>
             <CardTitle
@@ -1796,7 +1843,44 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               ))}
             </CardBody>
           </Card>
-
+          {/* // Then in the LEFT column, just before the SeoSection card: */}
+          {isEdit && editProduct?.id && (
+            <Card>
+              <CardTitle>Metafields</CardTitle>
+              <CardBody>
+                <MetafieldsPanel
+                  resource="products"
+                  resourceId={editProduct.id}
+                  resourceName={title}
+                  toast={toast}
+                />
+              </CardBody>
+            </Card>
+          )}
+          {/* Variant metafields — shows per-variant panel when a variant row is clicked */}
+          {isEdit && variants.length > 0 && editProduct?.variants && (
+            <Card>
+              <CardTitle>
+                Variant Metafields
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 400,
+                    color: C.muted,
+                    marginLeft: 8,
+                  }}
+                >
+                  select a variant below
+                </span>
+              </CardTitle>
+              <CardBody>
+                <VariantMetafieldsPicker
+                  productVariants={editProduct.variants}
+                  toast={toast}
+                />
+              </CardBody>
+            </Card>
+          )}
           {/* SEO */}
           <SeoSection
             title={title}

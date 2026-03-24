@@ -266,7 +266,7 @@ export default function InventoryPage() {
                         {item.variant_title &&
                         item.variant_title !== "Default Title"
                           ? item.variant_title
-                          : "â€”"}
+                          : "—"}
                       </td>
                       <td className="px-4 py-3 text-sm text-primary">
                         {locations.find((l) => l.id === item.location_id)

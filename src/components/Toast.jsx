@@ -38,10 +38,10 @@ export const Toasts = ({ toasts, remove }) => (
           padding: "14px 18px",
           background:
             t.type === "success"
-              ? "#064e3b"
+              ? "var(--toast-success-bg)"
               : t.type === "error"
-                ? "#7f1d1d"
-                : "#1e3a5f",
+                ? "var(--toast-error-bg)"
+                : "var(--toast-info-bg)",
           borderLeft: `4px solid ${
             t.type === "success"
               ? "var(--success)"

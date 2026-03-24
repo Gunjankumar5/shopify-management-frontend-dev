@@ -309,7 +309,7 @@ const ExportPage = ({ toast, activeStore }) => {
   const gridChanges = useRef(new Map());
   const importedRows = useRef(new Set());
   const gridCols = useRef([]);
-  const syncResults = useRef({});
+  const syncResults = useRef({}); // { row_index: status, error_msg }
   const wsRef = useRef(null);
 
   const [libsReady, setLibsReady] = useState(false);
@@ -368,7 +368,7 @@ const ExportPage = ({ toast, activeStore }) => {
         background: var(--accent-light) !important;
         color: var(--accent) !important;
       }
-      #hot-export .handsontable .s-UPDATED  { background: var(--success-light) !important; color: #000 !important; }
+      #hot-export .handsontable .s-UPDATED  { background: var(--success-light) !important; color: var(--text-on-light) !important; }
       #hot-export .handsontable .s-CREATED  { background: var(--accent-light) !important; }
       #hot-export .handsontable .s-ERROR    { background: var(--danger-light) !important; }
       #hot-export .handsontable .s-CONFLICT { background: var(--warning-light) !important; }
@@ -382,6 +382,135 @@ const ExportPage = ({ toast, activeStore }) => {
       #hot-export .handsontable .htContextMenu table.htCore tr:hover td {
         background: var(--accent-light) !important;
         color: var(--accent) !important;
+      }
+
+      /* Handsontable dropdown/filter menus are rendered outside #hot-export */
+      .handsontable.htDropdownMenu,
+      .handsontable.htContextMenu,
+      .handsontable.htFiltersConditionsMenu,
+      .handsontable.htFiltersValuesMenu,
+      .htMenu {
+        background: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-strong) !important;
+        border-radius: var(--radius-md) !important;
+        box-shadow: var(--shadow-md) !important;
+      }
+
+      .handsontable.htDropdownMenu table.htCore td,
+      .handsontable.htContextMenu table.htCore td,
+      .handsontable.htFiltersConditionsMenu table.htCore td,
+      .handsontable.htFiltersValuesMenu table.htCore td,
+      .htMenu table.htCore td {
+        background: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-subtle) !important;
+        font-size: 12px !important;
+      }
+
+      .handsontable.htDropdownMenu table.htCore tr:hover td,
+      .handsontable.htContextMenu table.htCore tr:hover td,
+      .handsontable.htFiltersConditionsMenu table.htCore tr:hover td,
+      .handsontable.htFiltersValuesMenu table.htCore tr:hover td,
+      .htMenu table.htCore tr:hover td {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+      }
+
+      .handsontable.htDropdownMenu td.htDisabled,
+      .handsontable.htContextMenu td.htDisabled,
+      .handsontable.htFiltersConditionsMenu td.htDisabled,
+      .handsontable.htFiltersValuesMenu td.htDisabled,
+      .htMenu td.htDisabled {
+        color: var(--text-muted) !important;
+      }
+
+      .handsontable.htDropdownMenu tr.htSeparator td,
+      .handsontable.htContextMenu tr.htSeparator td,
+      .handsontable.htFiltersConditionsMenu tr.htSeparator td,
+      .handsontable.htFiltersValuesMenu tr.htSeparator td,
+      .htMenu tr.htSeparator td {
+        border-top: 1px solid var(--border-strong) !important;
+      }
+
+      .handsontable.htDropdownMenu input,
+      .handsontable.htContextMenu input,
+      .handsontable.htFiltersConditionsMenu input,
+      .handsontable.htFiltersValuesMenu input,
+      .handsontable.htDropdownMenu select,
+      .handsontable.htContextMenu select,
+      .handsontable.htFiltersConditionsMenu select,
+      .handsontable.htFiltersValuesMenu select,
+      .htMenu input,
+      .htMenu select,
+      .htUIInput input,
+      .htUISelect .htUISelectCaption {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-strong) !important;
+        border-radius: var(--radius-sm) !important;
+      }
+
+      .handsontable.htDropdownMenu input::placeholder,
+      .handsontable.htContextMenu input::placeholder,
+      .handsontable.htFiltersConditionsMenu input::placeholder,
+      .handsontable.htFiltersValuesMenu input::placeholder,
+      .htMenu input::placeholder {
+        color: var(--text-muted) !important;
+      }
+
+      .handsontable.htDropdownMenu input:focus,
+      .handsontable.htContextMenu input:focus,
+      .handsontable.htFiltersConditionsMenu input:focus,
+      .handsontable.htFiltersValuesMenu input:focus,
+      .handsontable.htDropdownMenu select:focus,
+      .handsontable.htContextMenu select:focus,
+      .handsontable.htFiltersConditionsMenu select:focus,
+      .handsontable.htFiltersValuesMenu select:focus,
+      .htMenu input:focus,
+      .htMenu select:focus,
+      .htUISelect .htUISelectCaption:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 2px var(--accent-light) !important;
+        outline: none !important;
+      }
+
+      .handsontable.htDropdownMenu input[type="checkbox"],
+      .handsontable.htContextMenu input[type="checkbox"],
+      .handsontable.htFiltersConditionsMenu input[type="checkbox"],
+      .handsontable.htFiltersValuesMenu input[type="checkbox"],
+      .htMenu input[type="checkbox"] {
+        accent-color: var(--accent);
+      }
+
+      .handsontable.htDropdownMenu .htUIButton button,
+      .handsontable.htContextMenu .htUIButton button,
+      .handsontable.htFiltersConditionsMenu .htUIButton button,
+      .handsontable.htFiltersValuesMenu .htUIButton button,
+      .htMenu .htUIButton button {
+        background: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-strong) !important;
+        border-radius: var(--radius-sm) !important;
+      }
+
+      .handsontable.htDropdownMenu .htUIButton button:hover,
+      .handsontable.htContextMenu .htUIButton button:hover,
+      .handsontable.htFiltersConditionsMenu .htUIButton button:hover,
+      .handsontable.htFiltersValuesMenu .htUIButton button:hover,
+      .htMenu .htUIButton button:hover {
+        border-color: var(--accent) !important;
+        background: var(--bg-elevated) !important;
+      }
+
+      .handsontable.htDropdownMenu .htUIButton .htUIButtonOK,
+      .handsontable.htContextMenu .htUIButton .htUIButtonOK,
+      .handsontable.htFiltersConditionsMenu .htUIButton .htUIButtonOK,
+      .handsontable.htFiltersValuesMenu .htUIButton .htUIButtonOK,
+      .htMenu .htUIButton .htUIButtonOK {
+        background: var(--accent) !important;
+        border-color: var(--accent) !important;
+        color: var(--text-inverse) !important;
       }
     `;
     document.head.appendChild(style);
@@ -402,7 +531,9 @@ const ExportPage = ({ toast, activeStore }) => {
 
     const sourceKeys = collectGridKeys(rows);
     const preparedRows = rows.map((r) => {
-      const normalized = Object.fromEntries(sourceKeys.map((k) => [k, r?.[k] ?? ""]));
+      const normalized = Object.fromEntries(
+        sourceKeys.map((k) => [k, r?.[k] ?? ""]),
+      );
       normalized[IMAGE_PREVIEW_COLUMN] = normalized[IMAGE_URL_COLUMN] ?? "";
       return normalized;
     });
@@ -487,9 +618,16 @@ const ExportPage = ({ toast, activeStore }) => {
 
       cells(row, col) {
         const key = keys[col];
-        const status = syncResults.current[row];
-        if (status && STATUS_COLORS[status])
-          return { className: `s-${status}` };
+        const resultEntry = syncResults.current[row];
+        const status =
+          typeof resultEntry === "string" ? resultEntry : resultEntry?.status;
+        const errorMsg = resultEntry?.error;
+
+        if (status && STATUS_COLORS[status]) {
+          const meta = { className: `s-${status}` };
+          if (errorMsg) meta.title = errorMsg; // Show error as tooltip
+          return meta;
+        }
         if (READONLY_COLS.has(key) || key === IMAGE_PREVIEW_COLUMN)
           return { className: "ro-cell" };
         const hot = hotRef.current;
@@ -589,7 +727,14 @@ const ExportPage = ({ toast, activeStore }) => {
         if (!rows.length) throw new Error("No rows found");
         gridChanges.current.clear();
         importedRows.current.clear();
-        snapshotRef.current = {};
+        // ── Only clear snapshot if it's completely new data without Product IDs ──
+        // If rows have Product IDs, preserve snapshot so user can sync them
+        const hasProductIds = rows.some(
+          (r) => r["Product ID"] && r["Variant ID"],
+        );
+        if (!hasProductIds) {
+          snapshotRef.current = {};
+        }
         initGrid(rows);
         rows.forEach((row, i) => {
           if (row["Product ID"] && row["Variant ID"]) {
@@ -688,6 +833,23 @@ const ExportPage = ({ toast, activeStore }) => {
 
   const handleSync = useCallback(async () => {
     if (!hotRef.current || syncing) return;
+
+    // ── Check if snapshot is empty ──────────────────────────────────────
+    const snapshotEmpty =
+      !snapshotRef.current || Object.keys(snapshotRef.current).length === 0;
+    if (
+      snapshotEmpty &&
+      !window.confirm(
+        "⚠️  No snapshot found. This means sync will compare against an empty baseline, likely skipping most products.\n\n" +
+          "Did you mean to:\n" +
+          "  • Click RELOAD to refresh data from Shopify?\n" +
+          "  • Or SYNC anyway to see what happens?\n\n" +
+          "Click OK to continue with sync.",
+      )
+    ) {
+      return;
+    }
+
     const data = hotRef.current.getData();
     const cols = persistedColumns(gridCols.current);
     const colIndexes = cols.map((h) => gridCols.current.indexOf(h));
@@ -736,14 +898,20 @@ const ExportPage = ({ toast, activeStore }) => {
           if (hotRef.current) {
             const si = gridCols.current.indexOf("Sync Status");
             if (si >= 0) {
-              Object.entries(syncResults.current).forEach(([ri, st]) => {
-                hotRef.current.setDataAtCell(
-                  parseInt(ri),
-                  si,
-                  st,
-                  "syncUpdate",
-                );
-              });
+              Object.entries(syncResults.current).forEach(
+                ([ri, resultEntry]) => {
+                  const status =
+                    typeof resultEntry === "string"
+                      ? resultEntry
+                      : resultEntry?.status;
+                  hotRef.current.setDataAtCell(
+                    parseInt(ri),
+                    si,
+                    status,
+                    "syncUpdate",
+                  );
+                },
+              );
             }
           }
           gridChanges.current.clear();
@@ -751,8 +919,8 @@ const ExportPage = ({ toast, activeStore }) => {
           setChangedCount(0);
           ws.close();
         } else {
-          const { row_index, status } = msg;
-          syncResults.current[row_index] = status;
+          const { row_index, status, error } = msg;
+          syncResults.current[row_index] = { status, error };
           setSyncState((prev) => ({
             ...prev,
             results: { ...(prev?.results || {}), [row_index]: status },

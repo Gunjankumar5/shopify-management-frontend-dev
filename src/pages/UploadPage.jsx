@@ -73,8 +73,8 @@ const UploadPage = ({ toast }) => {
 
   return (
     <div
-      className="fade-up"
-      style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}
+      className="fade-up container max-w-7xl mx-auto px-4 pt-4"
+      style={{ position: "relative", minHeight: "calc(100vh - 120px)" }}
     >
       <div style={{ marginBottom: 28 }}>
         <h1
@@ -82,7 +82,7 @@ const UploadPage = ({ toast }) => {
             fontFamily: "'Syne', sans-serif",
             fontSize: 32,
             fontWeight: 800,
-            color: "#fff",
+            color: "var(--text-primary)",
           }}
         >
           Upload Products
@@ -195,9 +195,9 @@ const UploadPage = ({ toast }) => {
             textAlign: "center",
             cursor: "pointer",
             background: drag
-              ? "rgba(99,102,241,0.05)"
+              ? "var(--accent-subtle)"
               : file
-                ? "rgba(16,185,129,0.05)"
+                ? "var(--success-subtle)"
                 : "transparent",
             transition: "var(--transition)",
           }}
@@ -490,8 +490,8 @@ const UploadPage = ({ toast }) => {
         >
           <div
             style={{
-              background: "rgba(16,185,129,0.08)",
-              border: "1px solid rgba(16,185,129,0.2)",
+              background: "var(--success-bg)",
+              border: "1px solid var(--success-border)",
               borderRadius: 20,
               padding: 28,
             }}
@@ -515,8 +515,8 @@ const UploadPage = ({ toast }) => {
           </div>
           <div
             style={{
-              background: "rgba(239,68,68,0.08)",
-              border: "1px solid rgba(239,68,68,0.2)",
+              background: "var(--danger-bg)",
+              border: "1px solid var(--danger-border)",
               borderRadius: 20,
               padding: 28,
             }}
