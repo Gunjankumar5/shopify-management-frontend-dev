@@ -8,6 +8,7 @@ import AddProductPage from "./Addproductpage";
 
 const ProductsPage = ({ toast, activeStore }) => {
   const CLIENT_PAGE_SIZE = 50;
+  const BACKEND_PAGE_SIZE = 250;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("grid");
@@ -18,8 +19,6 @@ const ProductsPage = ({ toast, activeStore }) => {
   const [sel, setSel] = useState(new Set());
   const [priceM, setPriceM] = useState(false);
   const [deleting, setDeleting] = useState(null);
-  const [isFetchingAll, setIsFetchingAll] = useState(false);
-  const [loadedCount, setLoadedCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewportW, setViewportW] = useState(() => window.innerWidth);
   const [viewportH, setViewportH] = useState(() => window.innerHeight);
@@ -27,32 +26,30 @@ const ProductsPage = ({ toast, activeStore }) => {
   // null = list view, true = new product form, object = edit product form
   const [formMode, setFormMode] = useState(null);
 
-  const loadAllProducts = useCallback(
+  const loadInitialProducts = useCallback(
     async ({ force = false } = {}) => {
       if (!activeStore?.shop_key) {
         setProducts([]);
-        setLoadedCount(0);
         setCurrentPage(1);
-        setIsFetchingAll(false);
         setLoading(false);
         return;
       }
 
       setLoading(true);
-      setIsFetchingAll(true);
       setProducts([]);
-      setLoadedCount(0);
       setCurrentPage(1);
 
       try {
         const all = [];
         let cursor = null;
-        let hasNext = true;
+        let hasNextPage = true;
         let pagesFetched = 0;
         const maxPages = 500;
 
-        while (hasNext && pagesFetched < maxPages) {
-          const params = new URLSearchParams({ limit: "250" });
+        while (hasNextPage && pagesFetched < maxPages) {
+          const params = new URLSearchParams({
+            limit: String(BACKEND_PAGE_SIZE),
+          });
           if (statusF && statusF !== "all") params.set("status", statusF);
           if (searchQuery) params.set("search", searchQuery);
           if (cursor) params.set("page_info", cursor);
@@ -63,10 +60,9 @@ const ProductsPage = ({ toast, activeStore }) => {
 
           const batch = d.products || [];
           all.push(...batch);
-          setLoadedCount(all.length);
 
           cursor = d.next_page_info || null;
-          hasNext = Boolean(d.has_next_page && cursor);
+          hasNextPage = Boolean(d.has_next_page && cursor);
           pagesFetched += 1;
         }
 
@@ -74,7 +70,54 @@ const ProductsPage = ({ toast, activeStore }) => {
       } catch (error) {
         toast(`Failed to load products: ${error.message}`, "error");
       } finally {
-        setIsFetchingAll(false);
+        setLoading(false);
+      }
+    },
+    [statusF, searchQuery, toast, activeStore?.shop_key],
+  );
+
+  const loadAllProductsForBulkOps = useCallback(
+    async ({ force = false } = {}) => {
+      if (!activeStore?.shop_key) {
+        setProducts([]);
+        setCurrentPage(1);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const all = [];
+        let cursor = null;
+        let hasNextPage = true;
+        let pagesFetched = 0;
+        const maxPages = 500;
+
+        while (hasNextPage && pagesFetched < maxPages) {
+          const params = new URLSearchParams({
+            limit: String(BACKEND_PAGE_SIZE),
+          });
+          if (statusF && statusF !== "all") params.set("status", statusF);
+          if (searchQuery) params.set("search", searchQuery);
+          if (cursor) params.set("page_info", cursor);
+
+          const d = await api.get(`/products?${params.toString()}`, {
+            force: force || Boolean(cursor),
+          });
+
+          const batch = d.products || [];
+          all.push(...batch);
+
+          cursor = d.next_page_info || null;
+          hasNextPage = Boolean(d.has_next_page && cursor);
+          pagesFetched += 1;
+        }
+
+        setProducts(all);
+      } catch (error) {
+        toast(`Failed to load products: ${error.message}`, "error");
+      } finally {
         setLoading(false);
       }
     },
@@ -99,8 +142,8 @@ const ProductsPage = ({ toast, activeStore }) => {
 
   useEffect(() => {
     setSel(new Set());
-    loadAllProducts({ force: true });
-  }, [statusF, searchQuery, activeStore?.shop_key, loadAllProducts]);
+    loadInitialProducts({ force: true });
+  }, [statusF, searchQuery, activeStore?.shop_key, loadInitialProducts]);
 
   const filtered = useMemo(() => {
     let sorted = [...products];
@@ -176,7 +219,6 @@ const ProductsPage = ({ toast, activeStore }) => {
   const gridRows = Math.ceil(pagedProducts.length / gridColumns);
   const virtualHeight = Math.max(320, Math.min(760, viewportH - 360));
 
-  // Keep hook order stable by placing conditional return after hooks.
   if (formMode !== null) {
     return (
       <AddProductPage
@@ -184,7 +226,7 @@ const ProductsPage = ({ toast, activeStore }) => {
         editProduct={formMode === true ? null : formMode}
         onBack={() => {
           setFormMode(null);
-          loadAllProducts({ force: true });
+          loadInitialProducts({ force: true });
         }}
       />
     );
@@ -210,7 +252,7 @@ const ProductsPage = ({ toast, activeStore }) => {
     try {
       await api.delete(`/products/${id}`);
       toast("Deleted");
-      loadAllProducts({ force: true });
+      loadAllProductsForBulkOps({ force: true });
     } catch {
       toast("Failed", "error");
     }
@@ -236,7 +278,7 @@ const ProductsPage = ({ toast, activeStore }) => {
         `Deleted ${result.deleted} duplicate(s)!${result.failed ? ` (${result.failed} failed)` : ""}`,
         result.deleted > 0 ? "success" : "error",
       );
-      loadAllProducts({ force: true });
+      loadAllProductsForBulkOps({ force: true });
     } catch {
       toast("Failed to remove duplicates", "error");
     }
@@ -251,7 +293,7 @@ const ProductsPage = ({ toast, activeStore }) => {
     const fail = results.length - ok;
     toast(`Deleted ${ok}${fail ? `, ${fail} failed` : ""}`);
     setSel(new Set());
-    loadAllProducts({ force: true });
+    loadAllProductsForBulkOps({ force: true });
   };
 
   const handlePriceAdj = async ({ mode, value, dir }) => {
@@ -283,14 +325,17 @@ const ProductsPage = ({ toast, activeStore }) => {
     toast(`Updated ${ok} prices${fail ? `, ${fail} failed` : ""}`);
     setPriceM(false);
     setSel(new Set());
-    loadAllProducts({ force: true });
+    loadAllProductsForBulkOps({ force: true });
   };
 
-  const stats = {
-    total: products.length,
-    active: products.filter((p) => p.status === "active").length,
-    draft: products.filter((p) => p.status === "draft").length,
-  };
+  const stats = useMemo(
+    () => ({
+      total: products.length,
+      active: products.filter((p) => p.status === "active").length,
+      draft: products.filter((p) => p.status === "draft").length,
+    }),
+    [products],
+  );
 
   return (
     <div

@@ -122,6 +122,7 @@ const Sidebar = ({
     { id: "inventory", label: "Inventory", icon: "inventory" },
     { id: "export", label: "Export", icon: "download" },
     { id: "users", label: "User Management", icon: "users" },
+    { id: "activity-logs", label: "Activity Logs", icon: "history" },
     { id: "connect", label: "Connect Store", icon: "tag" },
   ];
 

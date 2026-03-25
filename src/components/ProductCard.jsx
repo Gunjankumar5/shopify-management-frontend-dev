@@ -1,33 +1,39 @@
 import { Ico } from "./Icons";
 import { Badge } from "./UI";
+import { memo, useMemo } from "react";
 
-const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
+const ProductCard = memo(({ p, sel, onSel, onEdit, onDel }) => {
   const img = p.images?.[0]?.src || p.image?.src;
   const price = p.variants?.[0]?.price;
   const cmp = p.variants?.[0]?.compare_at_price;
-  const inv = p.variants?.reduce((s, v) => s + (v.inventory_quantity || 0), 0);
 
-  // Determine inventory status color
-  const getInventoryStatus = () => {
-    if (inv === 0)
-      return {
+  const { inv, invStatus } = useMemo(() => {
+    const inventory =
+      p.variants?.reduce((s, v) => s + (v.inventory_quantity || 0), 0) || 0;
+
+    let status;
+    if (inventory === 0) {
+      status = {
         color: "var(--danger)",
         bg: "rgba(239,68,68,0.1)",
         label: "Out of stock",
       };
-    if (inv < 5)
-      return {
+    } else if (inventory < 5) {
+      status = {
         color: "var(--warning)",
         bg: "rgba(245,158,11,0.1)",
-        label: `Only ${inv} left`,
+        label: `Only ${inventory} left`,
       };
-    return {
-      color: "var(--success)",
-      bg: "rgba(16,185,129,0.1)",
-      label: `${inv} in stock`,
-    };
-  };
-  const invStatus = getInventoryStatus();
+    } else {
+      status = {
+        color: "var(--success)",
+        bg: "rgba(16,185,129,0.1)",
+        label: `${inventory} in stock`,
+      };
+    }
+
+    return { inv: inventory, invStatus: status };
+  }, [p.variants]);
 
   return (
     <div
@@ -283,6 +289,8 @@ const ProductCard = ({ p, sel, onSel, onEdit, onDel }) => {
       </div>
     </div>
   );
-};
+});
+
+ProductCard.displayName = "ProductCard";
 
 export default ProductCard;

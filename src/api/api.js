@@ -10,6 +10,25 @@ function clearGetCache() {
   inflightGets.clear();
 }
 
+function clearProductCache() {
+  const keysToDelete = Array.from(getCache.keys()).filter(
+    (key) =>
+      key.includes("/products") ||
+      key.includes("/inventory") ||
+      key.includes("/collections"),
+  );
+  keysToDelete.forEach((key) => getCache.delete(key));
+
+  // Also clear inflight requests for these endpoints
+  const inflightKeysToDelete = Array.from(inflightGets.keys()).filter(
+    (key) =>
+      key.includes("/products") ||
+      key.includes("/inventory") ||
+      key.includes("/collections"),
+  );
+  inflightKeysToDelete.forEach((key) => inflightGets.delete(key));
+}
+
 function getCachedValue(url, ttlMs) {
   const cached = getCache.get(url);
   if (!cached) return null;
@@ -25,7 +44,9 @@ function storeCachedValue(url, data) {
 }
 
 async function parseResponseBody(response) {
-  const contentType = (response.headers.get("content-type") || "").toLowerCase();
+  const contentType = (
+    response.headers.get("content-type") || ""
+  ).toLowerCase();
   if (response.status === 204) {
     return null;
   }
@@ -55,8 +76,10 @@ async function parseResponseBody(response) {
 
 function extractErrorMessage(data, status) {
   if (data && typeof data === "object") {
-    if (typeof data.detail === "string" && data.detail.trim()) return data.detail;
-    if (typeof data.message === "string" && data.message.trim()) return data.message;
+    if (typeof data.detail === "string" && data.detail.trim())
+      return data.detail;
+    if (typeof data.message === "string" && data.message.trim())
+      return data.message;
     if (Array.isArray(data.detail) && data.detail.length) {
       return data.detail.map((item) => JSON.stringify(item)).join("; ");
     }
@@ -141,7 +164,7 @@ export const api = {
       error.status = r.status;
       throw error;
     }
-    clearGetCache();
+    clearProductCache();
     return data;
   },
 
@@ -159,7 +182,7 @@ export const api = {
       error.status = r.status;
       throw error;
     }
-    clearGetCache();
+    clearProductCache();
     return data;
   },
 
@@ -173,7 +196,7 @@ export const api = {
       error.status = r.status;
       throw error;
     }
-    clearGetCache();
+    clearProductCache();
     return data;
   },
 
@@ -187,7 +210,7 @@ export const api = {
       error.status = r.status;
       throw error;
     }
-    clearGetCache();
+    clearProductCache();
     return data;
   },
   clearCache: clearGetCache,
