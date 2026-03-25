@@ -27,6 +27,7 @@ const ProductsPage = ({ toast }) => {
   // null = list view, true = new product form, object = edit product form
   const [formMode, setFormMode] = useState(null);
 
+  // ── FIX: removed toast from deps — toast is a new ref every render ──────────
   const loadAllProducts = useCallback(
     async ({ force = false } = {}) => {
       setLoading(true);
@@ -69,7 +70,8 @@ const ProductsPage = ({ toast }) => {
         setLoading(false);
       }
     },
-    [statusF, searchQuery, toast],
+    // ── FIX: removed toast and loadAllProducts from deps ──────────────────────
+    [statusF, searchQuery],
   );
 
   useEffect(() => {
@@ -88,10 +90,12 @@ const ProductsPage = ({ toast }) => {
     return () => window.clearTimeout(id);
   }, [search]);
 
+  // ── FIX: removed loadAllProducts from deps — it was causing infinite loop ───
   useEffect(() => {
     setSel(new Set());
     loadAllProducts({ force: true });
-  }, [statusF, searchQuery, loadAllProducts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusF, searchQuery]);
 
   const filtered = products;
   const productCount = filtered.length;
@@ -266,24 +270,9 @@ const ProductsPage = ({ toast }) => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
         {[
-          {
-            label: "Total",
-            value: stats.total,
-            color: "accent",
-            icon: "products",
-          },
-          {
-            label: "Active",
-            value: stats.active,
-            color: "success",
-            icon: "check",
-          },
-          {
-            label: "Drafts",
-            value: stats.draft,
-            color: "warning",
-            icon: "edit",
-          },
+          { label: "Total",  value: stats.total,  color: "accent",   icon: "products" },
+          { label: "Active", value: stats.active, color: "success",  icon: "check"    },
+          { label: "Drafts", value: stats.draft,  color: "warning",  icon: "edit"     },
         ].map((s) => (
           <div key={s.label} className="card flex items-center gap-2 p-2">
             <div
@@ -335,8 +324,7 @@ const ProductsPage = ({ toast }) => {
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = "var(--accent)";
-              e.currentTarget.style.boxShadow =
-                "0 0 0 4px rgba(99,102,241,0.1)";
+              e.currentTarget.style.boxShadow = "0 0 0 4px rgba(99,102,241,0.1)";
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = "transparent";
@@ -358,8 +346,7 @@ const ProductsPage = ({ toast }) => {
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = "var(--accent)";
-              e.currentTarget.style.boxShadow =
-                "0 0 0 4px rgba(99,102,241,0.1)";
+              e.currentTarget.style.boxShadow = "0 0 0 4px rgba(99,102,241,0.1)";
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = "var(--border-strong)";
@@ -367,14 +354,12 @@ const ProductsPage = ({ toast }) => {
             }}
           >
             {[
-              { v: "all", l: "All Status" },
-              { v: "active", l: "Active" },
-              { v: "draft", l: "Draft" },
-              { v: "archived", l: "Archived" },
+              { v: "all",      l: "All Status" },
+              { v: "active",   l: "Active"     },
+              { v: "draft",    l: "Draft"      },
+              { v: "archived", l: "Archived"   },
             ].map((o) => (
-              <option key={o.v} value={o.v}>
-                {o.l}
-              </option>
+              <option key={o.v} value={o.v}>{o.l}</option>
             ))}
           </select>
           <div
@@ -404,8 +389,7 @@ const ProductsPage = ({ toast }) => {
               style={{
                 background: view === v.id ? "var(--bg-card)" : "transparent",
                 boxShadow: view === v.id ? "var(--shadow-sm)" : "none",
-                color:
-                  view === v.id ? "var(--text-primary)" : "var(--text-muted)",
+                color: view === v.id ? "var(--text-primary)" : "var(--text-muted)",
               }}
               aria-label={`${v.id} view`}
             >
@@ -417,9 +401,7 @@ const ProductsPage = ({ toast }) => {
         {/* Actions */}
         <div className="flex items-center gap-2 ml-auto">
           <button
-            onClick={() => {
-              loadAllProducts({ force: true });
-            }}
+            onClick={() => loadAllProducts({ force: true })}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all"
             style={{
@@ -427,12 +409,8 @@ const ProductsPage = ({ toast }) => {
               border: "1px solid var(--border-strong)",
               color: "var(--text-secondary)",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "var(--bg-elevated)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "var(--bg-card)")
-            }
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-elevated)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "var(--bg-card)")}
           >
             {loading ? <Spin size={14} /> : <Ico n="sync" size={14} />}
             <span className="hidden sm:inline">Refresh</span>
@@ -456,22 +434,13 @@ const ProductsPage = ({ toast }) => {
       {/* Bulk Actions */}
       {sel.size > 0 && (
         <div className="bg-accent-light border border-accent/25 rounded-lg p-2 mb-3 flex flex-wrap items-center gap-2 fade-up">
-          <span className="text-xs font-semibold text-accent">
-            {sel.size} selected
-          </span>
+          <span className="text-xs font-semibold text-accent">{sel.size} selected</span>
           <div className="flex-1" />
-          <button
-            onClick={() => setPriceM(true)}
-            className="btn btn-secondary btn-sm"
-          >
+          <button onClick={() => setPriceM(true)} className="btn btn-secondary btn-sm">
             <Ico n="percent" size="xs" color="var(--accent)" /> Adjust Prices
           </button>
-          <button
-            onClick={handleRemoveDuplicates}
-            className="btn btn-secondary btn-sm"
-          >
-            <Ico n="percent" size="xs" color="var(--warning)" /> Remove
-            Duplicates
+          <button onClick={handleRemoveDuplicates} className="btn btn-secondary btn-sm">
+            <Ico n="percent" size="xs" color="var(--warning)" /> Remove Duplicates
           </button>
           <button onClick={handleBulkDel} className="btn btn-danger btn-sm">
             <Ico n="trash" size="xs" /> Delete
@@ -496,10 +465,7 @@ const ProductsPage = ({ toast }) => {
             onChange={selAll}
             id="selectAll"
           />
-          <label
-            htmlFor="selectAll"
-            className="text-xs text-secondary cursor-pointer"
-          >
+          <label htmlFor="selectAll" className="text-xs text-secondary cursor-pointer">
             Select all {pagedProducts.length} on this page
           </label>
         </div>
@@ -507,19 +473,9 @@ const ProductsPage = ({ toast }) => {
 
       {/* Product Grid/List */}
       {loading ? (
-        <div
-          className={
-            view === "grid"
-              ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
-              : "space-y-2"
-          }
-        >
+        <div className={view === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3" : "space-y-2"}>
           {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="skeleton"
-              style={{ height: view === "grid" ? 280 : 60 }}
-            />
+            <div key={i} className="skeleton" style={{ height: view === "grid" ? 280 : 60 }} />
           ))}
         </div>
       ) : view === "grid" ? (
@@ -575,17 +531,13 @@ const ProductsPage = ({ toast }) => {
                 const p = pagedProducts[index];
                 const img = p.images?.[0]?.src;
                 const price = p.variants?.[0]?.price;
-                const inv = p.variants?.reduce(
-                  (s, v) => s + (v.inventory_quantity || 0),
-                  0,
-                );
+                const inv = p.variants?.reduce((s, v) => s + (v.inventory_quantity || 0), 0);
                 return (
                   <div
                     style={{
                       ...style,
                       display: "grid",
-                      gridTemplateColumns:
-                        "34px minmax(220px,1.6fr) minmax(120px,1fr) 90px 70px 90px 92px",
+                      gridTemplateColumns: "34px minmax(220px,1.6fr) minmax(120px,1fr) 90px 70px 90px 92px",
                       alignItems: "center",
                       gap: 8,
                       padding: "8px 12px",
@@ -634,11 +586,7 @@ const ProductsPage = ({ toast }) => {
                         style={{ padding: "4px", fontSize: "0" }}
                         aria-label="Delete"
                       >
-                        {deleting === p.id ? (
-                          <Spin size={12} />
-                        ) : (
-                          <Ico n="trash" size={12} color="var(--danger)" />
-                        )}
+                        {deleting === p.id ? <Spin size={12} /> : <Ico n="trash" size={12} color="var(--danger)" />}
                       </button>
                     </div>
                   </div>
@@ -651,6 +599,7 @@ const ProductsPage = ({ toast }) => {
         </div>
       )}
 
+      {/* Pagination */}
       {!loading && (
         <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
           <div className="text-xs text-muted">
@@ -658,7 +607,6 @@ const ProductsPage = ({ toast }) => {
               ? `Loading all products... ${loadedCount} loaded`
               : `Showing ${pagedProducts.length} of ${productCount} products`}
           </div>
-
           <div className="flex items-center gap-2">
             <button
               type="button"
