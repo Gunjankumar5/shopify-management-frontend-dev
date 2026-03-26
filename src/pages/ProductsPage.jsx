@@ -220,19 +220,6 @@ const ProductsPage = ({ toast, activeStore }) => {
   const gridRows = Math.ceil(pagedProducts.length / gridColumns);
   const virtualHeight = Math.max(320, Math.min(760, viewportH - 360));
 
-  if (formMode !== null) {
-    return (
-      <AddProductPage
-        toast={toast}
-        editProduct={formMode === true ? null : formMode}
-        onBack={() => {
-          setFormMode(null);
-          loadInitialProducts({ force: true });
-        }}
-      />
-    );
-  }
-
   const toggleSel = (id) =>
     setSel((prev) => {
       const next = new Set(prev);
@@ -337,6 +324,20 @@ const ProductsPage = ({ toast, activeStore }) => {
     }),
     [products],
   );
+
+  // Render form or list view
+  if (formMode !== null) {
+    return (
+      <AddProductPage
+        toast={toast}
+        editProduct={formMode === true ? null : formMode}
+        onBack={() => {
+          setFormMode(null);
+          loadInitialProducts({ force: true });
+        }}
+      />
+    );
+  }
 
   return (
     <div
