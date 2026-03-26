@@ -140,6 +140,7 @@ const ProductsPage = ({ toast, activeStore }) => {
     return () => window.clearTimeout(id);
   }, [search]);
 
+  // ── FIX: removed loadAllProducts from deps — it was causing infinite loop ───
   useEffect(() => {
     setSel(new Set());
     loadInitialProducts({ force: true });
@@ -598,9 +599,7 @@ const ProductsPage = ({ toast, activeStore }) => {
         {/* Actions */}
         <div className="flex items-center gap-2 ml-auto">
           <button
-            onClick={() => {
-              loadAllProducts({ force: true });
-            }}
+            onClick={() => loadAllProducts({ force: true })}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all"
             style={{
