@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../api/config";
-import { authFetch } from "../lib/authFetch";
+import { api } from "../api/api";
 import { Spin } from "./Icons";
 
 const C = {
@@ -454,21 +454,15 @@ function DefinitionRow({ def, resource, resourceId, toast, onSaved }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const r = await authFetch(
-        `${API_BASE_URL}/metafields/${resource}/${resourceId}`,
+      const data = await api.post(
+        `/metafields/${resource}/${resourceId}`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            namespace: def.namespace,
-            key: def.key,
-            type,
-            value: formatForSave(value, type),
-          }),
+          namespace: def.namespace,
+          key: def.key,
+          type,
+          value: formatForSave(value, type),
         },
       );
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || "Failed");
       toast?.("Saved!", "success");
       setEditing(false);
       setValue("");
@@ -595,13 +589,9 @@ function MetafieldRow({ mf, defName, toast, onSaved, onDeleted }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const r = await authFetch(`${API_BASE_URL}/metafields/${mf.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ value: formatForSave(editVal, mf.type) }),
+      await api.put(`/metafields/${mf.id}`, {
+        value: formatForSave(editVal, mf.type),
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || "Failed");
       toast?.("Updated!", "success");
       setEditing(false);
       onSaved();
@@ -615,13 +605,7 @@ function MetafieldRow({ mf, defName, toast, onSaved, onDeleted }) {
     if (!window.confirm("Delete this metafield?")) return;
     setDeleting(true);
     try {
-      const r = await authFetch(`${API_BASE_URL}/metafields/${mf.id}`, {
-        method: "DELETE",
-      });
-      if (!r.ok) {
-        const d = await r.json();
-        throw new Error(d.detail || "Failed");
-      }
+      await api.delete(`/metafields/${mf.id}`);
       toast?.("Deleted", "success");
       onDeleted(mf.id);
     } catch (e) {
@@ -762,21 +746,12 @@ function AddCustomForm({ resource, resourceId, toast, onSaved, onClose }) {
     }
     setSaving(true);
     try {
-      const r = await authFetch(
-        `${API_BASE_URL}/metafields/${resource}/${resourceId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            namespace: form.namespace || "custom",
-            key: form.key,
-            type: form.type,
-            value: formatForSave(form.value, form.type),
-          }),
-        },
-      );
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || "Failed");
+      await api.post(`/metafields/${resource}/${resourceId}`, {
+        namespace: form.namespace || "custom",
+        key: form.key,
+        type: form.type,
+        value: formatForSave(form.value, form.type),
+      });
       toast?.("Metafield created!", "success");
       onSaved();
       onClose();
@@ -952,12 +927,10 @@ export default function MetafieldsPanel({
     if (!resourceId) return;
     setLoading(true);
     try {
-      const [mfRes, defRes] = await Promise.all([
-        authFetch(`${API_BASE_URL}/metafields/${resource}/${resourceId}`),
-        authFetch(`${API_BASE_URL}/metafields/definitions/${resource}`),
+      const [mfData, defData] = await Promise.all([
+        api.get(`/metafields/${resource}/${resourceId}`),
+        api.get(`/metafields/definitions/${resource}`),
       ]);
-      const mfData = await mfRes.json();
-      const defData = defRes.ok ? await defRes.json() : { definitions: [] };
       setMetafields(mfData.metafields || []);
       setDefinitions(defData.definitions || []);
     } catch {

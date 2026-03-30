@@ -36,9 +36,7 @@ const Sidebar = ({
 
   const fetchStores = async () => {
     try {
-      const r = await authFetch(`${API_BASE_URL}/auth/stores`);
-      if (!r.ok) return;
-      const data = await r.json();
+      const data = await api.get(`/auth/stores`, { ttlMs: 300000, persist: true });
       const nextStores = data.stores || [];
       setStores(nextStores);
 
@@ -73,13 +71,7 @@ const Sidebar = ({
 
   const switchStore = async (shop_key) => {
     try {
-      const r = await authFetch(
-        `${API_BASE_URL}/auth/active-store/${shop_key}`,
-        {
-          method: "POST",
-        },
-      );
-      if (!r.ok) return;
+      await api.post(`/auth/active-store/${shop_key}`, {});
 
       let nextActive = null;
       setStores((prev) =>
@@ -105,9 +97,7 @@ const Sidebar = ({
     e.stopPropagation();
     if (!window.confirm(`Disconnect ${shop_key}?`)) return;
     try {
-      await authFetch(`${API_BASE_URL}/auth/stores/${shop_key}`, {
-        method: "DELETE",
-      });
+      await api.delete(`/auth/stores/${shop_key}`);
       api.clearCache();
       await fetchStores();
       window.dispatchEvent(new CustomEvent("store-switched"));
@@ -136,7 +126,9 @@ const Sidebar = ({
       <aside
         className="app-sidebar"
         style={{
-          width: 260,
+          // tweak this variable to change sidebar width app-wide
+          "--app-sidebar-width": isMobile ? "100%" : "220px",
+          width: isMobile ? "100%" : "220px",
           background: colors.bgSecondary,
           borderRight: `1px solid ${colors.border}`,
           display: "flex",
@@ -354,7 +346,7 @@ const Sidebar = ({
                 background: colors.bgCard,
                 border: `1px solid ${dropdownOpen ? colors.accent : colors.border}`,
                 borderRadius: 8,
-                padding: "12px 14px",
+                padding: "8px 10px",
                 cursor: stores.length > 0 ? "pointer" : "default",
                 textAlign: "left",
                 transition: "all 0.2s",
@@ -383,10 +375,10 @@ const Sidebar = ({
                     >
                       <div
                         style={{
-                          fontSize: 11,
+                          fontSize: 10,
                           color: displayStore ? "#10B981" : colors.textMuted,
                           fontWeight: 600,
-                          marginBottom: 3,
+                          marginBottom: 2,
                           textTransform: "uppercase",
                         }}
                       >
@@ -409,14 +401,14 @@ const Sidebar = ({
                     </div>
                     <div
                       style={{
-                        fontSize: 13,
+                        fontSize: 12,
                         color: colors.textPrimary,
                         fontWeight: 500,
                       }}
                     >
                       {displayStore?.shop_name || displayStore?.shop_key || "—"}
                     </div>
-                    <div style={{ fontSize: 11, color: colors.textMuted }}>
+                    <div style={{ fontSize: 10, color: colors.textMuted }}>
                       {displayStore ? ".myshopify.com" : "Go to Connect Store"}
                     </div>
                   </>
@@ -428,28 +420,28 @@ const Sidebar = ({
               <div
                 style={{
                   position: "absolute",
-                  bottom: "calc(100% + 8px)",
+                  bottom: "calc(100% + 6px)",
                   left: 12,
                   right: 12,
                   background: colors.bgCard,
                   border: `1px solid ${colors.accent}`,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   overflow: "hidden",
                   boxShadow: "var(--shadow-lg)",
                   zIndex: 1001,
-                  maxHeight: "240px",
+                  maxHeight: "200px",
                   overflowY: "auto",
                 }}
               >
                 <div
                   style={{
-                    padding: "8px 12px 6px",
-                    fontSize: 10,
-                    color: colors.textMuted,
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    borderBottom: `1px solid ${colors.border}`,
-                  }}
+                      padding: "6px 10px 6px",
+                      fontSize: 10,
+                      color: colors.textMuted,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      borderBottom: `1px solid ${colors.border}`,
+                    }}
                 >
                   Connected Stores ({stores.length})
                 </div>
@@ -459,17 +451,17 @@ const Sidebar = ({
                     key={s.shop_key}
                     onClick={() => switchStore(s.shop_key)}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "10px 12px",
-                      cursor: "pointer",
-                      background: s.is_active
-                        ? "var(--accent-light)"
-                        : "transparent",
-                      borderLeft: `3px solid ${s.is_active ? colors.accent : "transparent"}`,
-                      transition: "background 0.15s",
-                    }}
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px 10px",
+                        cursor: "pointer",
+                        background: s.is_active
+                          ? "var(--accent-light)"
+                          : "transparent",
+                        borderLeft: `3px solid ${s.is_active ? colors.accent : "transparent"}`,
+                        transition: "background 0.15s",
+                      }}
                     onMouseEnter={(e) => {
                       if (!s.is_active)
                         e.currentTarget.style.background =
@@ -483,7 +475,7 @@ const Sidebar = ({
                     <div>
                       <div
                         style={{
-                          fontSize: 13,
+                          fontSize: 12,
                           color: s.is_active
                             ? colors.accent
                             : colors.textPrimary,
@@ -503,7 +495,7 @@ const Sidebar = ({
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 11, color: colors.textMuted }}>
+                      <div style={{ fontSize: 10, color: colors.textMuted }}>
                         {s.shop_key}
                       </div>
                     </div>
@@ -516,7 +508,7 @@ const Sidebar = ({
                         border: "none",
                         cursor: "pointer",
                         color: "#ef4444",
-                        fontSize: 14,
+                        fontSize: 13,
                         padding: "2px 6px",
                         borderRadius: 4,
                       }}
@@ -539,10 +531,10 @@ const Sidebar = ({
                     setDropdownOpen(false);
                   }}
                   style={{
-                    padding: "10px 12px",
+                    padding: "8px 10px",
                     cursor: "pointer",
                     borderTop: `1px solid ${colors.border}`,
-                    fontSize: 13,
+                    fontSize: 12,
                     color: colors.accent,
                     display: "flex",
                     alignItems: "center",
@@ -563,27 +555,27 @@ const Sidebar = ({
 
           <div
             style={{
-              padding: "12px",
+              padding: "8px",
               borderTop: `1px solid ${colors.border}`,
               background: "transparent",
             }}
           >
             <div
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 color: colors.textMuted,
                 textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                marginBottom: 6,
+                letterSpacing: "0.06em",
+                marginBottom: 4,
               }}
             >
               Signed In
             </div>
             <div
               style={{
-                fontSize: 12,
+                fontSize: 11,
                 color: colors.textPrimary,
-                marginBottom: 10,
+                marginBottom: 8,
                 overflowWrap: "anywhere",
               }}
             >
@@ -599,16 +591,16 @@ const Sidebar = ({
                 background: "transparent",
                 color: colors.textMuted,
                 cursor: "pointer",
-                padding: "10px 12px",
+                padding: "8px 10px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 600,
               }}
             >
-              <Ico n="logout" size={16} />
+              <Ico n="logout" size={14} />
               Sign out
             </button>
           </div>

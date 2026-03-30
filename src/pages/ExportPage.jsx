@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Ico, Spin } from "../components/Icons"; // adjust path if needed
-import { authFetch } from "../lib/authFetch";
+import { api } from "../api/api";
 
 // ─── CDN libs ─────────────────────────────────────────────────────────────────
 const HOT_CSS =
@@ -101,6 +101,8 @@ function collectGridKeys(rows) {
   ALWAYS_VISIBLE_COLUMNS.forEach((k) => keySet.add(k));
   return Array.from(keySet);
 }
+
+
 
 // ─── Loading overlay (redesigned with global tokens) ─────────────────────────
 function LoadingOverlay({ step, elapsed, isMobile }) {
@@ -310,7 +312,31 @@ const ExportPage = ({ toast, activeStore }) => {
   const importedRows = useRef(new Set());
   const gridCols = useRef([]);
   const syncResults = useRef({}); // { row_index: status, error_msg }
+  const choiceMapRef = useRef({});
   const wsRef = useRef(null);
+
+  // Resolve a choices array for a given column header.
+  // Handles exact names, case-insensitive matches, and namespace-prefixed keys
+  // by comparing the last segment after separators like '.' or '/'.
+  function findChoicesForHeader(header) {
+    try {
+      const map = choiceMapRef.current || {};
+      if (!map || typeof map !== "object") return null;
+      if (map[header]) return map[header];
+      const lower = String(header || "").toLowerCase();
+      for (const k of Object.keys(map)) {
+        if (String(k).toLowerCase() === lower) return map[k];
+      }
+      for (const k of Object.keys(map)) {
+        const parts = String(k).split(/[\.\/:#\s|-]/).filter(Boolean);
+        const last = parts.length ? parts[parts.length - 1] : k;
+        if (String(last).toLowerCase() === lower) return map[k];
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }
 
   const [libsReady, setLibsReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -572,6 +598,24 @@ const ExportPage = ({ toast, activeStore }) => {
         };
       }
       const col = { data: key, readOnly: READONLY_COLS.has(key) };
+
+      // If this key has a choice map from the export JSON, use a strict dropdown.
+      try {
+        const choices = findChoicesForHeader(key);
+        if (
+          key !== "Status" &&
+          key !== "Delete" &&
+          Array.isArray(choices) &&
+          choices.length
+        ) {
+          col.type = "dropdown";
+          col.source = ["", ...choices];
+          col.strict = true;
+        }
+      } catch (e) {
+        // defensive: ignore malformed choice map
+      }
+
       if (key === "Status") {
         col.type = "dropdown";
         col.source = ["ACTIVE", "DRAFT", "ARCHIVED"];
@@ -688,9 +732,7 @@ const ExportPage = ({ toast, activeStore }) => {
       setTimeout(() => setLoadStep(i + 2), d),
     );
     try {
-      const res = await authFetch(`${API_BASE_URL}/export/json`);
-      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await api.get(`/export/json`);
       setLoadStep(5);
       const rows = (data.rows || []).map((r) => {
         const o = {};
@@ -700,6 +742,7 @@ const ExportPage = ({ toast, activeStore }) => {
         return o;
       });
       snapshotRef.current = data.snapshot || {};
+      choiceMapRef.current = data.choice_map || {};
       setTimeout(() => initGrid(rows), 100);
       toast?.("Loaded " + rows.length + " rows", "success");
     } catch (err) {
@@ -860,17 +903,12 @@ const ExportPage = ({ toast, activeStore }) => {
     setSyncState({ results: {} });
     syncResults.current = {};
     try {
-      const startRes = await authFetch(`${API_BASE_URL}/export/sync`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rows,
-          snapshot: snapshotRef.current,
-          shop_key: activeStore?.shop_key || null,
-        }),
+      const startData = await api.post(`/export/sync`, {
+        rows,
+        snapshot: snapshotRef.current,
+        shop_key: activeStore?.shop_key || null,
       });
-      if (!startRes.ok) throw new Error(await startRes.text());
-      const { session_id } = await startRes.json();
+      const { session_id } = startData;
 
       const isLocal =
         window.location.hostname === "localhost" ||

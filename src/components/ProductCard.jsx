@@ -286,6 +286,72 @@ const ProductCard = memo(({ p, sel, onSel, onEdit, onDel }) => {
             <Ico n="trash" size={13} color="var(--danger)" />
           </button>
         </div>
+        {/* Metafields */}
+        {p.metafields && p.metafields.length > 0 && (
+          <div
+            style={{
+              marginTop: "var(--space-3)",
+              paddingTop: "var(--space-3)",
+              borderTop: "1px solid var(--border-strong)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "var(--text-xs)",
+                fontWeight: 600,
+                color: "var(--text-muted)",
+                marginBottom: "var(--space-2)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Metafields
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {p.metafields.slice(0, 3).map((mf, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: "var(--text-xs)",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "var(--text-muted)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "50%",
+                    }}
+                  >
+                    {mf.namespace}.{mf.key}
+                  </span>
+                  <span
+                    style={{
+                      color: "var(--text-primary)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "50%",
+                      textAlign: "right",
+                    }}
+                  >
+                    {String(mf.value || "—")}
+                  </span>
+                </div>
+              ))}
+              {p.metafields.length > 3 && (
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--accent)" }}>
+                  +{p.metafields.length - 3} more
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

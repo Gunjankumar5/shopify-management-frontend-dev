@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../api/config";
+import { api } from "../api/api";
 import { Spin } from "../components/Icons";
 import MetafieldsPanel from "../components/MetafieldsPanel";
 
@@ -39,12 +40,10 @@ export default function MetafieldsPage({ toast, activeStore }) {
     setSearch("");
     try {
       if (tab === "products" || tab === "variants") {
-        const r = await fetch(`${API_BASE_URL}/products/all`);
-        const data = await r.json();
+        const data = await api.get(`/products/all`, { ttlMs: 300000 });
         setResources(data.products || []);
       } else {
-        const r = await fetch(`${API_BASE_URL}/collections/`);
-        const data = await r.json();
+        const data = await api.get(`/collections/`, { ttlMs: 300000 });
         setResources(data.custom_collections || []);
       }
     } catch {

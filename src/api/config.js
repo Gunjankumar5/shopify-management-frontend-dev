@@ -11,9 +11,7 @@ const isLocalDev =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1";
 
-const rawOrigin = (import.meta.env.VITE_API_ORIGIN || "")
-  .trim()
-  .replace(/\/$/, "");
+const rawOrigin = (import.meta.env.VITE_API_ORIGIN || "").trim().replace(/\/$/, "");
 
 const resolvedOrigin = (() => {
   if (rawOrigin) {
@@ -26,19 +24,19 @@ const resolvedOrigin = (() => {
   // In production with no env var — log a clear warning
   console.error(
     "[config] VITE_API_ORIGIN is not set! " +
-      "Go to Vercel → Settings → Environment Variables and add it.",
+    "Go to Vercel → Settings → Environment Variables and add it."
   );
   return "";
 })();
 
-export const API_ORIGIN = resolvedOrigin;
-export const API_BASE_URL = `${resolvedOrigin}/api`;
+export const API_ORIGIN     = resolvedOrigin;
+export const API_BASE_URL   = `${resolvedOrigin}/api`;
 export const API_HEALTH_URL = `${resolvedOrigin}/health`;
 
 export const API_ENDPOINTS = {
-  products: `${API_BASE_URL}/products`,
-  collections: `${API_BASE_URL}/collections/`,
-  locations: `${API_BASE_URL}/inventory/locations`,
+  products:        `${API_BASE_URL}/products`,
+  collections:     `${API_BASE_URL}/collections/`,
+  locations:       `${API_BASE_URL}/inventory/locations`,
   inventoryLevels: `${API_BASE_URL}/inventory/levels`,
 };
 
@@ -46,12 +44,12 @@ export async function fetchJson(url, options = {}) {
   if (!API_ORIGIN) {
     throw new Error(
       "Backend URL is not configured. " +
-        "Set VITE_API_ORIGIN in your Vercel environment variables.",
+      "Set VITE_API_ORIGIN in your Vercel environment variables."
     );
   }
 
   const headers = await getAuthHeaders(options.headers || {});
-  const res = await fetch(url, { headers, ...options });
+  const res     = await fetch(url, { headers, ...options });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
