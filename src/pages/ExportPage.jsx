@@ -616,6 +616,57 @@ const ExportPage = ({ toast, activeStore }) => {
         // defensive: ignore malformed choice map
       }
 
+      // Heuristic fallback (restricted): only enable auto-dropdowns for a
+      // small, curated set of columns and for metafield columns. The user
+      // requested removing this behavior from all other columns to avoid
+      // accidental dropdown coercion.
+      try {
+        const AUTO_WHITELIST = new Set([
+          "inventory tracked",
+          "requires shipping",
+          "required shipping",
+          "variant inventory policy",
+          "status",
+          "vendor",
+          "type",
+          "variant weight unit",
+          "variant weight unit",
+        ]);
+
+        function allowedForAutoDropdown(k) {
+          if (!k) return false;
+          const s = String(k).toLowerCase().trim();
+          if (AUTO_WHITELIST.has(s)) return true;
+          // Allow any column that clearly represents metafields
+          if (s.includes("metafield")) return true;
+          // Also allow exact matches for a couple of common variants
+          return AUTO_WHITELIST.has(s.replace(/\s+/g, " "));
+        }
+
+        if (!col.type && Array.isArray(preparedRows) && preparedRows.length && allowedForAutoDropdown(key)) {
+          const vals = preparedRows
+            .map((r) => r?.[key])
+            .filter((v) => v !== undefined && v !== null && String(v).trim() !== "")
+            .map((v) => String(v).trim());
+          const uniq = Array.from(new Set(vals));
+          if (uniq.length > 0 && uniq.length <= 20) {
+            const allBool = uniq.every((v) => /^(true|false|yes|no)$/i.test(v));
+            const allNumeric = uniq.every((v) => /^-?\d+(?:\.\d+)?$/.test(v));
+            if (allBool) {
+              col.type = "dropdown";
+              col.source = ["", "true", "false"];
+              col.strict = true;
+            } else if (!allNumeric) {
+              col.type = "dropdown";
+              col.source = ["", ...uniq];
+              col.strict = true;
+            }
+          }
+        }
+      } catch (e) {
+        // ignore any heuristic errors
+      }
+
       if (key === "Status") {
         col.type = "dropdown";
         col.source = ["ACTIVE", "DRAFT", "ARCHIVED"];
@@ -674,6 +725,50 @@ const ExportPage = ({ toast, activeStore }) => {
         }
         if (READONLY_COLS.has(key) || key === IMAGE_PREVIEW_COLUMN)
           return { className: "ro-cell" };
+        // Provide per-cell autocomplete/dropdown for metafield columns when
+        // the cell contains a namespace.key=value form or when a matching
+        // choice map exists for the metafield key.
+        if (key === "Product Metafields" || key === "Collection Metafields") {
+          try {
+            const hot = hotRef.current;
+            const raw = String(hot?.getDataAtCell(row, col) || "").trim();
+            // Attempt to extract a metafield key from the cell value. Examples:
+            //   "global.color=red"  => metafieldKey = "global.color"
+            //   "global.color: red" => metafieldKey = "global.color"
+            //   "color=red"         => metafieldKey = "color"
+            let metafieldKey = "";
+            if (raw) {
+              const first = raw.split(/[,;|]\s*/)[0];
+              const eq = first.indexOf("=");
+              const colon = first.indexOf(":");
+              if (eq >= 0) metafieldKey = first.slice(0, eq).trim();
+              else if (colon >= 0) metafieldKey = first.slice(0, colon).trim();
+              else metafieldKey = first.trim();
+            }
+            const choices = metafieldKey
+              ? findChoicesForHeader(metafieldKey) || findChoicesForHeader(metafieldKey.split(".").pop())
+              : null;
+            if (Array.isArray(choices) && choices.length) {
+              return {
+                className: importedRows.current.has(row) && gridChanges.current.has(row) ? "imported-cell" : undefined,
+                editor: "autocomplete",
+                type: "autocomplete",
+                source: function (query, process) {
+                  // Provide choices to Handsontable's autocomplete source callback
+                  try {
+                    const items = ["", ...choices];
+                    process(items);
+                  } catch (e) {
+                    process([""]);
+                  }
+                },
+                strict: true,
+              };
+            }
+          } catch (e) {
+            // ignore and fallthrough to default
+          }
+        }
         const hot = hotRef.current;
         if (hot) {
           const di = keys.indexOf("Delete");
@@ -743,6 +838,47 @@ const ExportPage = ({ toast, activeStore }) => {
       });
       snapshotRef.current = data.snapshot || {};
       choiceMapRef.current = data.choice_map || {};
+
+      // Merge metafield definitions choices from backend definitions endpoint
+      // to cover cases where choice lists are present in definitions but
+      // not included in the snapshot's choice_map (e.g. option-type metafields).
+      try {
+        const defsResp = await api.get(`/metafields/definitions/products`);
+        const defs = (defsResp && defsResp.definitions) || [];
+        // Build a mapping ns.key -> meta.choices
+        const defsMap = {};
+        defs.forEach((d) => {
+          try {
+            const ns = d.namespace || "";
+            const key = d.key || "";
+            if (!ns || !key) return;
+            const nsKey = `${ns}.${key}`;
+            const choices = (d.validations || []).find(v => v.name === 'choices');
+            let parsed = null;
+            if (choices && choices.value) {
+              try { parsed = JSON.parse(choices.value); } catch(e) { parsed = String(choices.value); }
+            }
+            defsMap[nsKey] = {
+              name: d.name || nsKey,
+              choices: Array.isArray(parsed) ? parsed.map(String) : (parsed ? [String(parsed)] : []),
+            };
+          } catch (e) {}
+        });
+
+        // Merge into choiceMapRef by display name and by last-segment name
+        Object.keys(defsMap).forEach((nsKey) => {
+          const meta = defsMap[nsKey];
+          if (!meta.choices || !meta.choices.length) return;
+          const display = meta.name || nsKey;
+          if (!choiceMapRef.current[display]) choiceMapRef.current[display] = meta.choices;
+          const last = nsKey.split('.').pop();
+          if (last && !choiceMapRef.current[last]) choiceMapRef.current[last] = meta.choices;
+        });
+      } catch (e) {
+        // ignore failures to fetch defs — best-effort
+      }
+
+      // Re-init grid so new choice_map is applied to columns
       setTimeout(() => initGrid(rows), 100);
       toast?.("Loaded " + rows.length + " rows", "success");
     } catch (err) {

@@ -45,12 +45,12 @@ export default function App() {
   const { toasts, add, remove } = useToast();
 
   useEffect(() => {
-    if (devAuth) {
-      // devAuth: skip real supabase initialization
+    if (allowDevShortcuts) {
+      // allowDevShortcuts: skip real supabase initialization when dev override is active
       return;
     }
 
-    if ((!hasSupabaseConfig || !supabase) && !devAuth) {
+    if ((!hasSupabaseConfig || !supabase) && !allowDevShortcuts) {
       setAuthError(
         "Missing Supabase env config. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
       );
