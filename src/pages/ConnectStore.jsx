@@ -74,7 +74,7 @@ function normalizeShopName(value) {
 // Improved Field component with proper htmlFor and optional hint
 function Field({ label, hint, children, id }) {
   return (
-    <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+    <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
       <label
         htmlFor={id}
         style={{
@@ -127,8 +127,8 @@ function Stat({ label, value }) {
       </div>
       <div
         style={{
-          marginTop: 6,
-          fontSize: 18,
+          marginTop: 4.5,
+          fontSize: 13.5,
           fontWeight: 700,
           color: "var(--text-primary, #f3f4f6)",
           minWidth: 0,
@@ -227,18 +227,18 @@ export default function ConnectStore({ onConnected }) {
     return (
       <div
         style={{
-          minHeight: "calc(100vh - 80px)",
+          minHeight: "calc(100vh - 60px)",
           display: "grid",
           placeItems: "center",
-          padding: "24px",
+          padding: "18px",
         }}
       >
         <div
           style={{
             ...panelStyle,
-            maxWidth: 720,
+            maxWidth: 540,
             width: "100%",
-            padding: "clamp(24px, 4vw, 40px)",
+            padding: "clamp(18px, 3vw, 30px)",
             position: "relative",
             overflow: "hidden",
           }}
@@ -255,16 +255,16 @@ export default function ConnectStore({ onConnected }) {
           />
           <div
             style={{
-              width: 64,
-              height: 64,
+              width: 48,
+              height: 48,
               borderRadius: 20,
               display: "grid",
               placeItems: "center",
               background: "var(--success-icon-gradient)",
               border: "1px solid var(--success-icon-border)",
               color: "var(--success-text)",
-              fontSize: 30,
-              marginBottom: 18,
+              fontSize: 22.5,
+              marginBottom: 13.5,
             }}
           >
             <Checkmark size={30} />

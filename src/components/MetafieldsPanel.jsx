@@ -162,11 +162,11 @@ function formatForSave(value, type) {
 
 const baseInput = {
   width: "100%",
-  padding: "8px 12px",
+  padding: "6px 9px",
   background: "var(--bg-input)",
   border: `1px solid ${C.border}`,
-  borderRadius: 7,
-  fontSize: 13,
+  borderRadius: 5.25,
+  fontSize: 9.75,
   color: C.text,
   outline: "none",
   fontFamily: "inherit",
@@ -174,8 +174,36 @@ const baseInput = {
   boxSizing: "border-box",
 };
 
+// ── Extract options from validations ───────────────────────────────────────────
+function extractOptionsFromValidations(validations = []) {
+  if (!Array.isArray(validations)) return null;
+
+  const choicesValidation = validations.find((v) => v.name === "choices");
+  if (!choicesValidation) return null;
+
+  // Value is typically a JSON string array or direct array
+  let options = choicesValidation.value;
+  if (typeof options === "string") {
+    try {
+      options = JSON.parse(options);
+    } catch {
+      return null;
+    }
+  }
+
+  return Array.isArray(options) && options.length > 0 ? options : null;
+}
+
 // ── Smart value input per type ─────────────────────────────────────────────────
-function ValueInput({ type, value, onChange, placeholder }) {
+function ValueInput({
+  type,
+  value,
+  onChange,
+  placeholder,
+  options,
+  onInputBlur,
+  autoFocus,
+}) {
   const [focused, setFocused] = useState(false);
   const style = {
     ...baseInput,
@@ -187,7 +215,40 @@ function ValueInput({ type, value, onChange, placeholder }) {
       : {}),
   };
   const onFocus = () => setFocused(true);
-  const onBlur = () => setFocused(false);
+  const onBlur = () => {
+    onInputBlur?.();
+    setFocused(false);
+  };
+
+  // Render dropdown if options exist
+  if (options && Array.isArray(options) && options.length > 0) {
+    return (
+      <select
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          ...style,
+          appearance: "none",
+          cursor: "pointer",
+          paddingRight: 32,
+          backgroundImage: `url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22${encodeURIComponent(C.muted)}%22 stroke-width=%222%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E')`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "right 10px center",
+          backgroundSize: "12px",
+        }}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        autoFocus={autoFocus}
+      >
+        <option value="">-- Select an option --</option>
+        {options.map((opt, idx) => (
+          <option key={idx} value={opt || ""}>
+            {opt}
+          </option>
+        ))}
+      </select>
+    );
+  }
 
   if (type === "boolean") {
     return (
@@ -197,6 +258,7 @@ function ValueInput({ type, value, onChange, placeholder }) {
         style={style}
         onFocus={onFocus}
         onBlur={onBlur}
+        autoFocus={autoFocus}
       >
         <option value="true">true</option>
         <option value="false">false</option>
@@ -212,6 +274,7 @@ function ValueInput({ type, value, onChange, placeholder }) {
         style={style}
         onFocus={onFocus}
         onBlur={onBlur}
+        autoFocus={autoFocus}
         placeholder={placeholder}
       />
     );
@@ -225,6 +288,7 @@ function ValueInput({ type, value, onChange, placeholder }) {
         style={style}
         onFocus={onFocus}
         onBlur={onBlur}
+        autoFocus={autoFocus}
       />
     );
   }
@@ -237,6 +301,7 @@ function ValueInput({ type, value, onChange, placeholder }) {
         style={style}
         onFocus={onFocus}
         onBlur={onBlur}
+        autoFocus={autoFocus}
       />
     );
   }
@@ -248,13 +313,13 @@ function ValueInput({ type, value, onChange, placeholder }) {
           value={value || "#000000"}
           onChange={(e) => onChange(e.target.value)}
           style={{
-            width: 40,
-            height: 38,
-            borderRadius: 6,
+            width: 30,
+            height: 28.5,
+            borderRadius: 4.5,
             border: `1px solid ${C.border}`,
             cursor: "pointer",
             background: "transparent",
-            padding: 2,
+            padding: 1.5,
           }}
         />
         <input
@@ -276,7 +341,7 @@ function ValueInput({ type, value, onChange, placeholder }) {
         onChange={(e) => onChange(e.target.value)}
         onFocus={onFocus}
         onBlur={onBlur}
-        style={{ ...style, minHeight: 90, resize: "vertical" }}
+        style={{ ...style, minHeight: 67.5, resize: "vertical" }}
         placeholder={
           type === "json" ? '{"key": "value"}' : "<p>HTML content</p>"
         }
@@ -290,7 +355,7 @@ function ValueInput({ type, value, onChange, placeholder }) {
         onChange={(e) => onChange(e.target.value)}
         onFocus={onFocus}
         onBlur={onBlur}
-        style={{ ...style, minHeight: 80, resize: "vertical" }}
+        style={{ ...style, minHeight: 60, resize: "vertical" }}
         placeholder={placeholder}
       />
     );
@@ -389,6 +454,7 @@ function ValueInput({ type, value, onChange, placeholder }) {
       style={style}
       onFocus={onFocus}
       onBlur={onBlur}
+      autoFocus={autoFocus}
       placeholder={placeholder}
     />
   );
@@ -444,7 +510,15 @@ function Btn({ children, onClick, disabled, variant = "secondary", style: s }) {
 }
 
 // ── Definition row — shown when definition exists but no value yet ─────────────
-function DefinitionRow({ def, resource, resourceId, toast, onSaved }) {
+function DefinitionRow({
+  def,
+  resource,
+  resourceId,
+  toast,
+  onSaved,
+  batchMode,
+  onBatchAdd,
+}) {
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -452,6 +526,28 @@ function DefinitionRow({ def, resource, resourceId, toast, onSaved }) {
   const tc = getTypeColor(type);
 
   const handleSave = async () => {
+    // Validate that value is not empty
+    const formattedValue = formatForSave(value, type);
+    if (!formattedValue || formattedValue === '""' || formattedValue === "[]") {
+      toast?.("Value cannot be empty", "error");
+      return;
+    }
+
+    if (batchMode) {
+      // Batch mode: collect the change instead of saving immediately
+      onBatchAdd?.({
+        namespace: def.namespace,
+        key: def.key,
+        type,
+        value: formattedValue,
+        isNew: true,
+      });
+      setEditing(false);
+      setValue("");
+      return;
+    }
+
+    // Immediate mode: save directly
     setSaving(true);
     try {
       const r = await authFetch(
@@ -463,17 +559,18 @@ function DefinitionRow({ def, resource, resourceId, toast, onSaved }) {
             namespace: def.namespace,
             key: def.key,
             type,
-            value: formatForSave(value, type),
+            value: formattedValue,
           }),
         },
       );
       const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || "Failed");
+      if (!r.ok) throw new Error(data.detail || "Failed to save metafield");
       toast?.("Saved!", "success");
       setEditing(false);
       setValue("");
       onSaved();
     } catch (e) {
+      console.error("Save error:", e);
       toast?.(e.message, "error");
     }
     setSaving(false);
@@ -529,6 +626,7 @@ function DefinitionRow({ def, resource, resourceId, toast, onSaved }) {
               value={value}
               onChange={setValue}
               placeholder={def.description || "Enter value…"}
+              options={extractOptionsFromValidations(def.validations)}
             />
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <Btn
@@ -537,17 +635,7 @@ function DefinitionRow({ def, resource, resourceId, toast, onSaved }) {
                 variant="primary"
                 style={{ fontSize: 12, padding: "5px 12px" }}
               >
-                {saving ? <Spin size={11} /> : "Save"}
-              </Btn>
-              <Btn
-                onClick={() => {
-                  setEditing(false);
-                  setValue("");
-                }}
-                variant="secondary"
-                style={{ fontSize: 12, padding: "5px 12px" }}
-              >
-                Cancel
+                {saving ? <Spin size={11} /> : batchMode ? "Add" : "Save"}
               </Btn>
             </div>
           </div>
@@ -576,7 +664,16 @@ function DefinitionRow({ def, resource, resourceId, toast, onSaved }) {
 }
 
 // ── Existing metafield row (already has a value) ───────────────────────────────
-function MetafieldRow({ mf, defName, toast, onSaved, onDeleted }) {
+function MetafieldRow({
+  mf,
+  definition,
+  defName,
+  toast,
+  onSaved,
+  onDeleted,
+  batchMode,
+  onBatchUpdate,
+}) {
   const [editing, setEditing] = useState(false);
   const [editVal, setEditVal] = useState("");
   const [saving, setSaving] = useState(false);
@@ -592,21 +689,46 @@ function MetafieldRow({ mf, defName, toast, onSaved, onDeleted }) {
     );
   };
 
+  // Auto-track changes in batch mode
+  useEffect(() => {
+    if (
+      editing &&
+      batchMode &&
+      editVal !==
+        (typeof mf.value === "object"
+          ? JSON.stringify(mf.value)
+          : String(mf.value ?? ""))
+    ) {
+      // Value has changed, auto-track it
+      onBatchUpdate?.({
+        id: mf.id,
+        value: formatForSave(editVal, mf.type),
+      });
+    }
+  }, [editVal, editing, batchMode, mf.id, mf.value, mf.type, onBatchUpdate]);
+
   const handleSave = async () => {
+    // Immediate mode only
     setSaving(true);
     try {
+      const formattedValue = formatForSave(editVal, mf.type);
       const r = await authFetch(`${API_BASE_URL}/metafields/${mf.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ value: formatForSave(editVal, mf.type) }),
+        body: JSON.stringify({ value: formattedValue }),
       });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || "Failed");
+      if (!r.ok) {
+        const errorMsg =
+          data.detail || `Error updating metafield (HTTP ${r.status})`;
+        throw new Error(errorMsg);
+      }
       toast?.("Updated!", "success");
       setEditing(false);
       onSaved();
     } catch (e) {
-      toast?.(e.message, "error");
+      console.error("Update error:", e);
+      toast?.(e.message || "Failed to update metafield", "error");
     }
     setSaving(false);
   };
@@ -677,24 +799,30 @@ function MetafieldRow({ mf, defName, toast, onSaved, onDeleted }) {
       <div style={{ flex: 1 }}>
         {editing ? (
           <div>
-            <ValueInput type={mf.type} value={editVal} onChange={setEditVal} />
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <Btn
-                onClick={handleSave}
-                disabled={saving}
-                variant="primary"
-                style={{ fontSize: 12, padding: "5px 12px" }}
-              >
-                {saving ? <Spin size={11} /> : "Save"}
-              </Btn>
-              <Btn
-                onClick={() => setEditing(false)}
-                variant="secondary"
-                style={{ fontSize: 12, padding: "5px 12px" }}
-              >
-                Cancel
-              </Btn>
-            </div>
+            <ValueInput
+              type={mf.type}
+              value={editVal}
+              onChange={setEditVal}
+              options={
+                definition
+                  ? extractOptionsFromValidations(definition.validations)
+                  : null
+              }
+              onInputBlur={() => (batchMode ? setEditing(false) : null)}
+              autoFocus
+            />
+            {!batchMode && (
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <Btn
+                  onClick={handleSave}
+                  disabled={saving}
+                  variant="primary"
+                  style={{ fontSize: 12, padding: "5px 12px" }}
+                >
+                  {saving ? <Spin size={11} /> : "Save"}
+                </Btn>
+              </div>
+            )}
           </div>
         ) : (
           <div
@@ -927,9 +1055,6 @@ function AddCustomForm({ resource, resourceId, toast, onSaved, onClose }) {
         <Btn onClick={handleCreate} disabled={saving} variant="primary">
           {saving ? <Spin size={12} /> : "Save metafield"}
         </Btn>
-        <Btn onClick={onClose} variant="secondary">
-          Cancel
-        </Btn>
       </div>
     </div>
   );
@@ -941,11 +1066,17 @@ export default function MetafieldsPanel({
   resourceId,
   resourceName,
   toast,
+  batchMode = true,
 }) {
   const [metafields, setMetafields] = useState([]);
   const [definitions, setDefinitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState({
+    new: [],
+    updates: [],
+  });
+  const [saving, setSaving] = useState(false);
 
   // ── Fetch both metafields and definitions in parallel ──────────────────────
   const fetchAll = useCallback(async () => {
@@ -957,14 +1088,111 @@ export default function MetafieldsPanel({
         authFetch(`${API_BASE_URL}/metafields/definitions/${resource}`),
       ]);
       const mfData = await mfRes.json();
-      const defData = defRes.ok ? await defRes.json() : { definitions: [] };
+      let defData = { definitions: [] };
+
+      if (!defRes.ok) {
+        const errorData = await defRes.json();
+        console.error(
+          `Failed to load definitions (${defRes.status}):`,
+          errorData,
+        );
+        toast?.(
+          `Error loading metafield definitions: ${errorData.detail || defRes.statusText}`,
+          "error",
+        );
+      } else {
+        defData = await defRes.json();
+      }
+
+      console.log(`Metafields for ${resource}/${resourceId}:`, mfData);
+      console.log(`Definitions for ${resource}:`, defData);
       setMetafields(mfData.metafields || []);
       setDefinitions(defData.definitions || []);
-    } catch {
+    } catch (e) {
+      console.error("Failed to load metafields:", e);
       toast?.("Failed to load metafields", "error");
     }
     setLoading(false);
   }, [resource, resourceId]);
+
+  // ── Batch mode handlers (memoized to prevent excessive re-renders) ─────────
+  const handleBatchAdd = useCallback((newMetafield) => {
+    setPendingChanges((p) => ({
+      ...p,
+      new: [...p.new, newMetafield],
+    }));
+  }, []);
+
+  const handleBatchUpdate = useCallback((update) => {
+    setPendingChanges((p) => {
+      // Check if we already have an update for this metafield ID
+      const existingIndex = p.updates.findIndex((u) => u.id === update.id);
+      if (existingIndex >= 0) {
+        // Replace the existing update with the new value
+        const newUpdates = [...p.updates];
+        newUpdates[existingIndex] = update;
+        return { ...p, updates: newUpdates };
+      } else {
+        // Add new update
+        return { ...p, updates: [...p.updates, update] };
+      }
+    });
+  }, []);
+
+  const handleSaveAll = async () => {
+    if (
+      pendingChanges.new.length === 0 &&
+      pendingChanges.updates.length === 0
+    ) {
+      toast?.("No changes to save", "warning");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Save new metafields
+      for (const mf of pendingChanges.new) {
+        const r = await authFetch(
+          `${API_BASE_URL}/metafields/${resource}/${resourceId}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              namespace: mf.namespace,
+              key: mf.key,
+              type: mf.type,
+              value: mf.value,
+            }),
+          },
+        );
+        if (!r.ok) {
+          const data = await r.json();
+          throw new Error(data.detail || "Failed to save metafield");
+        }
+      }
+
+      // Update existing metafields
+      for (const update of pendingChanges.updates) {
+        const r = await authFetch(`${API_BASE_URL}/metafields/${update.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: update.value }),
+        });
+        if (!r.ok) {
+          const data = await r.json();
+          throw new Error(data.detail || "Failed to update metafield");
+        }
+      }
+
+      toast?.("All changes saved!", "success");
+      setPendingChanges({ new: [], updates: [] });
+      await fetchAll();
+    } catch (e) {
+      console.error("Batch save error:", e);
+      toast?.(e.message || "Failed to save changes", "error");
+    }
+    setSaving(false);
+  };
 
   useEffect(() => {
     fetchAll();
@@ -992,6 +1220,9 @@ export default function MetafieldsPanel({
     setMetafields((prev) => prev.filter((m) => m.id !== id));
 
   const hasAnything = defRows.length > 0 || customMetafields.length > 0;
+
+  // Auto-expand add form if no metafields exist
+  const shouldAutoExpandAdd = !hasAnything && !showAdd;
 
   if (loading) {
     return (
@@ -1032,7 +1263,8 @@ export default function MetafieldsPanel({
                 marginLeft: 8,
               }}
             >
-              {metafields.length} field{metafields.length !== 1 ? "s" : ""}
+              {metafields.length} set
+              {defRows.length > 0 ? ` / ${defRows.length} available` : ""}
             </span>
           </div>
           {resourceName && (
@@ -1041,17 +1273,37 @@ export default function MetafieldsPanel({
             </div>
           )}
         </div>
-        <Btn
-          onClick={() => setShowAdd((p) => !p)}
-          variant="primary"
-          style={{ fontSize: 12 }}
-        >
-          + Add metafield
-        </Btn>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {batchMode &&
+            (pendingChanges.new.length > 0 ||
+              pendingChanges.updates.length > 0) && (
+              <Btn
+                onClick={handleSaveAll}
+                disabled={saving}
+                variant="primary"
+                style={{ fontSize: 12 }}
+              >
+                {saving ? (
+                  <Spin size={11} />
+                ) : (
+                  `Save All (${pendingChanges.new.length + pendingChanges.updates.length})`
+                )}
+              </Btn>
+            )}
+          {!shouldAutoExpandAdd && (
+            <Btn
+              onClick={() => setShowAdd((p) => !p)}
+              variant="primary"
+              style={{ fontSize: 12 }}
+            >
+              {showAdd ? "Cancel" : "+ Add metafield"}
+            </Btn>
+          )}
+        </div>
       </div>
 
       {/* Add custom form */}
-      {showAdd && (
+      {(showAdd || shouldAutoExpandAdd) && (
         <AddCustomForm
           resource={resource}
           resourceId={resourceId}
@@ -1061,31 +1313,62 @@ export default function MetafieldsPanel({
         />
       )}
 
-      {/* Empty state */}
-      {!hasAnything && !showAdd && (
+      {/* Empty state with helpful info — only show if NO definitions exist */}
+      {defRows.length === 0 && !hasAnything && !shouldAutoExpandAdd && (
         <div style={{ textAlign: "center", padding: "36px 0", color: C.muted }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>🏷️</div>
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
             No metafields yet
           </div>
-          <div style={{ fontSize: 12 }}>
+          <div style={{ fontSize: 12, marginBottom: 14 }}>
             Add custom data to extend this {resource.slice(0, -1)}
           </div>
+          <button
+            onClick={fetchAll}
+            style={{
+              fontSize: 12,
+              padding: "6px 12px",
+              background: C.accent,
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            🔄 Refresh metafields from Shopify
+          </button>
         </div>
       )}
 
       {/* Definition-based rows — shown even when empty, just like Shopify */}
       {defRows.length > 0 && (
         <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: C.muted,
+              textTransform: "uppercase",
+              letterSpacing: ".06em",
+              padding: "14px 0 4px",
+            }}
+          >
+            Available metafields ({metafields.length} set,{" "}
+            {defRows.filter((r) => !r.existing).length} empty)
+          </div>
           {defRows.map(({ def, existing }) =>
             existing ? (
               <MetafieldRow
                 key={existing.id}
                 mf={existing}
+                definition={def}
                 defName={def.name}
                 toast={toast}
                 onSaved={fetchAll}
                 onDeleted={handleDeleted}
+                batchMode={batchMode}
+                onBatchUpdate={handleBatchUpdate}
               />
             ) : (
               <DefinitionRow
@@ -1095,6 +1378,8 @@ export default function MetafieldsPanel({
                 resourceId={resourceId}
                 toast={toast}
                 onSaved={fetchAll}
+                batchMode={batchMode}
+                onBatchAdd={handleBatchAdd}
               />
             ),
           )}
@@ -1126,6 +1411,8 @@ export default function MetafieldsPanel({
               toast={toast}
               onSaved={fetchAll}
               onDeleted={handleDeleted}
+              batchMode={batchMode}
+              onBatchUpdate={handleBatchUpdate}
             />
           ))}
         </div>

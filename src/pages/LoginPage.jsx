@@ -174,7 +174,7 @@ export default function LoginPage() {
         minHeight: "100vh",
         display: "grid",
         placeItems: "center",
-        padding: "24px",
+        padding: "18px",
         background:
           "radial-gradient(1200px 600px at 15% -20%, var(--accent-overlay-subtle), transparent), radial-gradient(1200px 700px at 120% 120%, var(--success-overlay-subtle), transparent), var(--bg-primary)",
       }}
@@ -182,8 +182,8 @@ export default function LoginPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: 940,
-          borderRadius: 18,
+          maxWidth: 705,
+          borderRadius: 13.5,
           border: "1px solid var(--border-strong)",
           background:
             "linear-gradient(180deg, var(--login-card-dark), var(--login-card-darker))",
@@ -197,14 +197,14 @@ export default function LoginPage() {
       >
         <div
           style={{
-            padding: "34px 32px",
+            padding: "25.5px 24px",
             borderRight: isCompact ? "none" : "1px solid var(--border-subtle)",
             borderBottom: isCompact ? "1px solid var(--border-subtle)" : "none",
             background:
               "linear-gradient(145deg, var(--login-left-accent), var(--login-left-success) 55%, transparent)",
             display: "grid",
             alignContent: "space-between",
-            gap: 24,
+            gap: 18,
           }}
         >
           <div>
@@ -225,7 +225,7 @@ export default function LoginPage() {
             <h1
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "clamp(1.8rem, 4vw, 2.4rem)",
+                fontSize: "clamp(1.35rem, 3vw, 1.8rem)",
                 lineHeight: 1.02,
               }}
             >
@@ -233,10 +233,10 @@ export default function LoginPage() {
             </h1>
             <p
               style={{
-                marginTop: 12,
+                marginTop: 9,
                 color: "var(--text-secondary)",
                 fontSize: "var(--text-sm)",
-                maxWidth: 360,
+                maxWidth: 270,
               }}
             >
               Secure dashboard access for each store owner. Your account only
@@ -247,25 +247,25 @@ export default function LoginPage() {
           <div
             style={{
               display: "grid",
-              gap: 10,
+              gap: 7.5,
               color: "var(--text-secondary)",
-              fontSize: 13,
+              fontSize: 9.75,
             }}
           >
             <div
-              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             >
               <Ico n="check" size={14} color="var(--success)" />
               Isolated store access per user
             </div>
             <div
-              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             >
               <Ico n="check" size={14} color="var(--success)" />
               Session handled by Supabase Auth
             </div>
             <div
-              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             >
               <Ico n="check" size={14} color="var(--success)" />
               Revocable access and secure sign out
@@ -273,16 +273,16 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: "28px 28px 30px" }}>
-          <div style={{ display: "grid", gap: 14 }}>
+        <form onSubmit={handleSubmit} style={{ padding: "21px 21px 22.5px" }}>
+          <div style={{ display: "grid", gap: 10.5 }}>
             <div
               style={{
                 display: "inline-grid",
                 gridTemplateColumns: "1fr 1fr",
                 background: "var(--bg-input)",
                 border: "1px solid var(--border-strong)",
-                borderRadius: 10,
-                padding: 4,
+                borderRadius: 7.5,
+                padding: 3,
               }}
             >
               <button

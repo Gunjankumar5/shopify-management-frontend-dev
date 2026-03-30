@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
 import { PageLoadingOverlay } from "../components/UI";
@@ -16,21 +16,22 @@ function useViewportWidth() {
   return width;
 }
 
-// ── Shared style tokens matching existing app dark theme ──────────────────
+// ── Shared style tokens using CSS variables for theme support ──────────────────
 const C = {
-  bg: "#0A0A0A",
-  surface: "#111111",
-  card: "#1A1A1A",
-  border: "#2A2A2A",
-  borderFocus: "#3B82F6",
-  text: "#FFFFFF",
-  muted: "#A0A0A0",
-  disabled: "#555555",
-  accent: "#3B82F6",
-  accentGrad: "linear-gradient(135deg,#3B82F6,#8B5CF6)",
-  success: "#10B981",
-  danger: "#EF4444",
-  warning: "#F59E0B",
+  bg: "var(--bg-primary)",
+  surface: "var(--bg-secondary)",
+  card: "var(--bg-card)",
+  border: "var(--border-subtle)",
+  borderFocus: "var(--accent)",
+  text: "var(--text-primary)",
+  muted: "var(--text-secondary)",
+  disabled: "var(--text-muted)",
+  accent: "var(--accent)",
+  accentGrad: "var(--accent-gradient)",
+  success: "var(--success)",
+  danger: "var(--danger)",
+  warning: "var(--warning)",
+  bgInput: "var(--bg-input)",
 };
 
 // ── Reusable primitives ───────────────────────────────────────────────────
@@ -101,14 +102,14 @@ const Field = ({ label, optional, children, help }) => (
 const inputStyle = (focused) => ({
   width: "100%",
   padding: "8px 12px",
-  background: "#0d0d0d",
+  background: C.bgInput,
   border: `1px solid ${focused ? C.borderFocus : C.border}`,
   borderRadius: 7,
   fontSize: 13,
   color: C.text,
   outline: "none",
   fontFamily: "inherit",
-  boxShadow: focused ? `0 0 0 3px rgba(59,130,246,.12)` : "none",
+  boxShadow: focused ? `0 0 0 3px var(--accent-light)` : "none",
   transition: "border-color .15s, box-shadow .15s",
 });
 
@@ -137,7 +138,7 @@ function Input({
         <span
           style={{
             padding: "8px 10px",
-            background: "#0a0a0a",
+            background: C.bgInput,
             borderRight: `1px solid ${C.border}`,
             fontSize: 13,
             color: C.muted,
@@ -196,20 +197,25 @@ function Textarea({ value, onChange, placeholder, minHeight = 120 }) {
   );
 }
 
-function Select({ value, onChange, options }) {
+// --- Improved Select component with theme consistency ---
+function Select({ value, onChange, options, disabled = false }) {
   const [focused, setFocused] = useState(false);
+
   return (
     <div style={{ position: "relative" }}>
       <select
         value={value}
         onChange={onChange}
+        disabled={disabled}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{
           ...inputStyle(focused),
           appearance: "none",
           paddingRight: 32,
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.6 : 1,
+          transition: "border-color .15s, box-shadow .15s",
         }}
       >
         {options.map((o) => (
@@ -225,12 +231,13 @@ function Select({ value, onChange, options }) {
           top: "50%",
           transform: "translateY(-50%)",
           pointerEvents: "none",
+          transition: "stroke .15s",
+          stroke: focused ? C.accent : C.muted,
         }}
         width="12"
         height="12"
         viewBox="0 0 24 24"
         fill="none"
-        stroke={C.muted}
         strokeWidth="2"
       >
         <path d="M6 9l6 6 6-6" />
@@ -328,7 +335,7 @@ function RichText({ valueRef }) {
           display: "flex",
           gap: 2,
           padding: 8,
-          background: "#0d0d0d",
+          background: C.bgInput,
           borderBottom: `1px solid ${C.border}`,
           flexWrap: "wrap",
         }}
@@ -384,7 +391,7 @@ function RichText({ valueRef }) {
           outline: "none",
           fontSize: 13,
           color: C.text,
-          background: "#0d0d0d",
+          background: C.bgInput,
           lineHeight: 1.6,
         }}
         data-placeholder="Describe your product..."
@@ -428,9 +435,9 @@ function MediaUpload({ files, setFiles }) {
           textAlign: "center",
           cursor: "pointer",
           background: drag
-            ? "rgba(59,130,246,.05)"
+            ? "var(--accent-light)"
             : files.length
-              ? "rgba(16,185,129,.04)"
+              ? "var(--success-light)"
               : "transparent",
           transition: "all .2s",
         }}
@@ -572,8 +579,8 @@ function TagInput({ tags, setTags }) {
         padding: "6px 8px",
         minHeight: 40,
         cursor: "text",
-        background: "#0d0d0d",
-        boxShadow: focused ? `0 0 0 3px rgba(59,130,246,.12)` : "none",
+        background: C.bgInput,
+        boxShadow: focused ? `0 0 0 3px var(--accent-light)` : "none",
         transition: "border-color .15s, box-shadow .15s",
       }}
     >
@@ -584,7 +591,7 @@ function TagInput({ tags, setTags }) {
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            background: "#2a2a2a",
+            background: C.border,
             borderRadius: 4,
             padding: "2px 8px",
             fontSize: 12,
@@ -858,7 +865,7 @@ function CollectionPicker({
           marginTop: 8,
           border: `1px solid ${C.border}`,
           borderRadius: 7,
-          background: "#0d0d0d",
+          background: C.bgInput,
           maxHeight: 180,
           overflowY: "auto",
         }}
@@ -989,7 +996,6 @@ function StatusDot({ status }) {
 }
 
 // ── Variant metafields picker ─────────────────────────────────────────────────
-// MUST be defined before AddProductPage uses it
 function VariantMetafieldsPicker({ productVariants, toast }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   return (
@@ -1596,7 +1602,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
                   <div
                     style={{
                       padding: "8px 12px",
-                      background: "#0d0d0d",
+                      background: C.bgInput,
                       border: `1px solid ${C.border}`,
                       borderRadius: 7,
                       fontSize: 13,
@@ -1691,7 +1697,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
                         readOnly
                         style={{
                           ...inputStyle(false),
-                          background: "#0a0a0a",
+                          background: C.bgInput,
                           color: C.disabled,
                         }}
                       />
@@ -1770,7 +1776,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
                       <span
                         style={{
                           padding: "8px 12px",
-                          background: "#0a0a0a",
+                          background: C.bgInput,
                           borderLeft: `1px solid ${C.border}`,
                           fontSize: 13,
                           color: C.muted,
@@ -1843,7 +1849,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               ))}
             </CardBody>
           </Card>
-          {/* // Then in the LEFT column, just before the SeoSection card: */}
+          {/* Metafields (product) */}
           {isEdit && editProduct?.id && (
             <Card>
               <CardTitle>Metafields</CardTitle>
@@ -1857,7 +1863,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               </CardBody>
             </Card>
           )}
-          {/* Variant metafields — shows per-variant panel when a variant row is clicked */}
+          {/* Variant metafields */}
           {isEdit && variants.length > 0 && editProduct?.variants && (
             <Card>
               <CardTitle>
@@ -2016,7 +2022,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
           bottom: 0,
           left: isTabletOrBelow ? 0 : 220,
           right: 0,
-          background: "#0d0d0d",
+          background: C.card,
           borderTop: `1px solid ${C.border}`,
           padding: isPhone ? "10px 12px" : "12px 24px",
           display: "flex",

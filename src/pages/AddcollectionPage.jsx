@@ -16,18 +16,19 @@ function useViewportWidth() {
   return width;
 }
 
-// ── Design tokens ─────────────────────────────────────────────────────────
+// ── Design tokens using CSS variables for theme support ────────────────
 const C = {
-  card: "#1A1A1A",
-  border: "#2A2A2A",
-  borderFocus: "#3B82F6",
-  text: "#FFFFFF",
-  muted: "#A0A0A0",
-  disabled: "#555555",
-  accent: "#3B82F6",
-  success: "#10B981",
-  danger: "#EF4444",
-  warning: "#F59E0B",
+  card: "var(--bg-card)",
+  border: "var(--border-subtle)",
+  borderFocus: "var(--accent)",
+  text: "var(--text-primary)",
+  muted: "var(--text-secondary)",
+  disabled: "var(--text-muted)",
+  accent: "var(--accent)",
+  success: "var(--success)",
+  danger: "var(--danger)",
+  warning: "var(--warning)",
+  bgInput: "var(--bg-input)",
 };
 
 // ── Primitives ────────────────────────────────────────────────────────────
@@ -101,14 +102,14 @@ function useInputStyle(focused) {
   return {
     width: "100%",
     padding: "8px 12px",
-    background: "#0d0d0d",
+    background: C.bgInput,
     border: `1px solid ${focused ? C.borderFocus : C.border}`,
     borderRadius: 7,
     fontSize: 13,
     color: C.text,
     outline: "none",
     fontFamily: "inherit",
-    boxShadow: focused ? `0 0 0 3px rgba(59,130,246,.12)` : "none",
+    boxShadow: focused ? `0 0 0 3px var(--accent-light)` : "none",
     transition: "border-color .15s, box-shadow .15s",
   };
 }
@@ -140,7 +141,7 @@ function Input({
         <span
           style={{
             padding: "8px 10px",
-            background: "#0a0a0a",
+            background: C.bgInput,
             borderRight: `1px solid ${C.border}`,
             fontSize: 12,
             color: C.muted,
@@ -179,7 +180,7 @@ function Input({
       style={{
         ...base,
         ...(readOnly
-          ? { background: "#0a0a0a", color: C.disabled, cursor: "default" }
+          ? { background: C.bgInput, color: C.disabled, cursor: "default" }
           : {}),
         ...s,
       }}
@@ -351,7 +352,7 @@ function CollectionTypeSwitch({ value, onChange, disabled }) {
               width: 22,
               height: 22,
               borderRadius: "50%",
-              background: "#fff",
+              background: "var(--bg-primary)",
               transform: `translateX(${isSmart ? 22 : 0}px)`,
               transition: "transform .18s",
             }}
@@ -387,7 +388,7 @@ function CollectionTypeSwitch({ value, onChange, disabled }) {
               style={{
                 textAlign: "left",
                 border: `1px solid ${active ? C.accent : C.border}`,
-                background: active ? "rgba(59,130,246,.1)" : "#0d0d0d",
+                background: active ? "var(--accent-light)" : C.bgInput,
                 borderRadius: 8,
                 padding: "10px 12px",
                 cursor: disabled ? "not-allowed" : "pointer",
@@ -444,7 +445,7 @@ function RichText({ valueRef, initialHtml }) {
           display: "flex",
           gap: 2,
           padding: 8,
-          background: "#0d0d0d",
+          background: C.bgInput,
           borderBottom: `1px solid ${C.border}`,
           flexWrap: "wrap",
         }}
@@ -503,7 +504,7 @@ function RichText({ valueRef, initialHtml }) {
           outline: "none",
           fontSize: 13,
           color: C.text,
-          background: "#0d0d0d",
+          background: C.bgInput,
           lineHeight: 1.6,
         }}
         data-placeholder="Describe this collection..."
@@ -798,7 +799,7 @@ function ConditionRow({ cond, onChange, onRemove, isOnly, compact }) {
           <span
             style={{
               padding: "8px 8px",
-              background: "#0a0a0a",
+              background: C.bgInput,
               borderRight: `1px solid ${C.border}`,
               fontSize: 12,
               color: C.muted,
@@ -817,7 +818,7 @@ function ConditionRow({ cond, onChange, onRemove, isOnly, compact }) {
           style={{
             flex: 1,
             padding: "8px 12px",
-            background: "#0d0d0d",
+            background: C.bgInput,
             border: "none",
             outline: "none",
             fontSize: 13,
@@ -1012,16 +1013,16 @@ function ProductsList({ products }) {
           border: `1px solid ${C.border}`,
           overflow: "hidden",
           flexShrink: 0,
-          background: "#0d0d0d",
+          background: C.bgInput,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        {p.image ? (
+        {p.images?.[0]?.src || p.image ? (
           <img
-            src={p.image}
-            alt=""
+            src={p.images?.[0]?.src || p.image}
+            alt={p.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
@@ -1125,7 +1126,7 @@ function ProductPicker({
                 gap: 10,
                 width: "100%",
                 textAlign: "left",
-                background: checked ? "rgba(59,130,246,.08)" : "#0d0d0d",
+                background: checked ? "var(--accent-light)" : C.bgCard,
                 border: `1px solid ${checked ? C.accent : C.border}`,
                 borderRadius: 8,
                 padding: "10px 12px",
@@ -1158,7 +1159,7 @@ function ProductPicker({
                   borderRadius: 6,
                   overflow: "hidden",
                   border: `1px solid ${C.border}`,
-                  background: "#111",
+                  background: C.bgInput,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -2053,7 +2054,7 @@ export default function AddCollectionPage({ toast, onBack, editCollection }) {
           bottom: 0,
           left: isTabletOrBelow ? 0 : 220,
           right: 0,
-          background: "#0d0d0d",
+          background: C.card,
           borderTop: `1px solid ${C.border}`,
           padding: isPhone ? "10px 12px" : "12px 24px",
           display: "flex",

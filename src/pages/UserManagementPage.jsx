@@ -174,15 +174,15 @@ export default function UserManagementPage({ activeStore, userEmail }) {
   return (
     <div
       style={{
-        padding: "24px",
-        paddingTop: "16px",
+        padding: "18px",
+        paddingTop: "12px",
         background: colors.bgPrimary,
         minHeight: "100vh",
         overflowY: "auto",
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: "32px" }}>
+      <div style={{ marginBottom: "24px" }}>
         <div
           style={{
             display: "flex",
@@ -194,7 +194,7 @@ export default function UserManagementPage({ activeStore, userEmail }) {
           <Ico n="users" size={32} color={colors.accent} />
           <h1
             style={{
-              fontSize: "28px",
+              fontSize: "21px",
               fontWeight: 700,
               color: colors.textPrimary,
               margin: 0,
@@ -203,7 +203,7 @@ export default function UserManagementPage({ activeStore, userEmail }) {
             User Management
           </h1>
         </div>
-        <p style={{ fontSize: "14px", color: colors.textMuted, margin: "0" }}>
+        <p style={{ fontSize: "10.5px", color: colors.textMuted, margin: "0" }}>
           Manage team members and assign permissions
         </p>
       </div>

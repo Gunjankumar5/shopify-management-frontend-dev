@@ -215,8 +215,8 @@ function SyncProgressBar({ syncState, totalRows, isMobile }) {
         background: "var(--bg-secondary)",
         minHeight: 32,
         flexWrap: isMobile ? "wrap" : "nowrap",
-        paddingTop: isMobile ? 6 : undefined,
-        paddingBottom: isMobile ? 6 : undefined,
+        paddingTop: isMobile ? 4.5 : undefined,
+        paddingBottom: isMobile ? 4.5 : undefined,
       }}
     >
       <div
@@ -548,7 +548,7 @@ const ExportPage = ({ toast, activeStore }) => {
           readOnly: true,
           renderer: function (instance, td, row, col, prop, value) {
             td.innerHTML = "";
-            td.style.cssText = "padding:2px 4px;overflow:hidden;";
+            td.style.cssText = "padding:1.5px 3px;overflow:hidden;";
             const sourceUrls = instance.getDataAtRowProp(row, IMAGE_URL_COLUMN);
             const urls = String(sourceUrls || "")
               .split(",")
@@ -949,7 +949,7 @@ const ExportPage = ({ toast, activeStore }) => {
       {/* Topbar */}
       <div
         className="flex items-center gap-3 px-4 py-2 bg-secondary border-b border-strong flex-shrink-0"
-        style={{ flexWrap: isMobile ? "wrap" : "nowrap", rowGap: 8 }}
+        style={{ flexWrap: isMobile ? "wrap" : "nowrap", rowGap: 6 }}
       >
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-warning shadow-glow" />

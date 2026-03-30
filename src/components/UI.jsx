@@ -23,9 +23,9 @@ export const Badge = ({ status }) => {
   return (
     <span
       style={{
-        padding: "4px 10px",
+        padding: "3px 7.5px",
         borderRadius: 20,
-        fontSize: 11,
+        fontSize: 8.25,
         fontWeight: 600,
         background: s.bg,
         color: s.color,
@@ -61,7 +61,7 @@ export const Modal = ({ title, subtitle, onClose, children, maxWidth = 660 }) =>
             <h2
               style={{
                 fontFamily: "'Syne', sans-serif",
-                fontSize: 22,
+                fontSize: 16.5,
                 fontWeight: 700,
                 color: "#fff",
                 lineHeight: 1.2,
@@ -84,13 +84,13 @@ export const Modal = ({ title, subtitle, onClose, children, maxWidth = 660 }) =>
           <button
             onClick={onClose}
             className="btn btn-secondary"
-            style={{ padding: 8, borderRadius: 10 }}
+            style={{ padding: 6, borderRadius: 10 }}
             aria-label="Close"
           >
             <Ico n="x" size={18} />
           </button>
         </div>
-        <div style={{ padding: "24px 28px 28px" }}>{children}</div>
+        <div style={{ padding: "18px 21px 21px" }}>{children}</div>
       </div>
     </div>,
     document.body,
@@ -117,8 +117,8 @@ export const PageLoadingOverlay = ({
     <div
       className="card"
       style={{
-        width: "min(92vw, 360px)",
-        padding: 24,
+        width: "min(92vw, 270px)",
+        padding: 18,
         textAlign: "center",
         border: "1px solid var(--border-strong)",
         boxShadow: "var(--shadow-xl)",
@@ -129,24 +129,24 @@ export const PageLoadingOverlay = ({
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "4px 10px",
+          padding: "3px 7.5px",
           borderRadius: 999,
           background: "var(--warning-light)",
           color: "var(--warning)",
-          fontSize: 11,
+          fontSize: 8.25,
           fontWeight: 700,
           letterSpacing: "0.06em",
-          marginBottom: 14,
+          marginBottom: 10.5,
         }}
       >
         {badge}
       </div>
       <div
         style={{
-          width: 52,
-          height: 52,
-          margin: "0 auto 14px",
-          borderRadius: 16,
+          width: 39,
+          height: 39,
+          margin: "0 auto 10.5px",
+          borderRadius: 12,
           background: "var(--bg-overlay-light)",
           display: "flex",
           alignItems: "center",
@@ -159,9 +159,9 @@ export const PageLoadingOverlay = ({
       <div
         style={{
           color: "var(--text-primary)",
-          fontSize: 18,
+          fontSize: 13.5,
           fontWeight: 700,
-          marginBottom: 6,
+          marginBottom: 4.5,
           fontFamily: "'Syne', sans-serif",
         }}
       >
@@ -170,7 +170,7 @@ export const PageLoadingOverlay = ({
       <div
         style={{
           color: "var(--text-muted)",
-          fontSize: 13,
+          fontSize: 9.75,
           lineHeight: 1.5,
         }}
       >
@@ -190,10 +190,10 @@ export const Field = ({
   pre,
   suf,
 }) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+  <div style={{ display: "flex", flexDirection: "column", gap: 4.5 }}>
     <label
       style={{
-        fontSize: 12,
+        fontSize: 9,
         fontWeight: 600,
         color: "var(--text-secondary)",
         textTransform: "uppercase",
@@ -211,7 +211,7 @@ export const Field = ({
             position: "absolute",
             left: 12,
             color: "var(--text-muted)",
-            fontSize: 14,
+            fontSize: 10.5,
             pointerEvents: "none",
             zIndex: 1,
           }}
@@ -225,7 +225,7 @@ export const Field = ({
           onChange={(e) => onChange(e.target.value)}
           className="field-input"
           style={{
-            padding: "10px 14px",
+            padding: "7.5px 10.5px",
             appearance: "none",
             cursor: "pointer",
           }}

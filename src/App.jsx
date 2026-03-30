@@ -15,7 +15,13 @@ import { hasSupabaseConfig, supabase } from "./lib/supabaseClient";
 import MetafieldsPage from "./pages/MetafieldsPage";
 
 export default function App() {
-  const [page, setPage] = useState("products");
+  const [page, setPage] = useState(() => {
+    try {
+      return localStorage.getItem("currentPage") || "products";
+    } catch {
+      return "products";
+    }
+  });
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeStore, setActiveStore] = useState(null);
@@ -65,6 +71,15 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Persist current page to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("currentPage", page);
+    } catch {
+      // Silently fail if localStorage is unavailable
+    }
+  }, [page]);
 
   useEffect(() => {
     const onResize = () => {

@@ -136,7 +136,7 @@ const Sidebar = ({
       <aside
         className="app-sidebar"
         style={{
-          width: 260,
+          width: 195,
           background: colors.bgSecondary,
           borderRight: `1px solid ${colors.border}`,
           display: "flex",
@@ -154,7 +154,7 @@ const Sidebar = ({
         {/* Fixed Header Section */}
         <div
           style={{
-            padding: "24px 18px 18px",
+            padding: "18px 13.5px 13.5px",
             borderBottom: `1px solid ${colors.border}`,
             flexShrink: 0,
           }}
@@ -196,7 +196,7 @@ const Sidebar = ({
                 <div
                   style={{
                     fontFamily: "'Syne', sans-serif",
-                    fontSize: 16,
+                    fontSize: 12,
                     fontWeight: 800,
                     color: colors.textPrimary,
                   }}

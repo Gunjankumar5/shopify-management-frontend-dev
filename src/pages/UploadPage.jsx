@@ -76,18 +76,20 @@ const UploadPage = ({ toast }) => {
       className="fade-up container max-w-7xl mx-auto px-4 pt-4"
       style={{ position: "relative", minHeight: "calc(100vh - 120px)" }}
     >
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 21 }}>
         <h1
           style={{
             fontFamily: "'Syne', sans-serif",
-            fontSize: 32,
+            fontSize: 24,
             fontWeight: 800,
             color: "var(--text-primary)",
           }}
         >
           Upload Products
         </h1>
-        <p style={{ color: "var(--text-muted)", marginTop: 4, fontSize: 15 }}>
+        <p
+          style={{ color: "var(--text-muted)", marginTop: 3, fontSize: 11.25 }}
+        >
           Import Excel or CSV and push to Shopify
         </p>
       </div>
@@ -97,7 +99,7 @@ const UploadPage = ({ toast }) => {
         style={{
           display: "flex",
           alignItems: "center",
-          marginBottom: 32,
+          marginBottom: 24,
           gap: 0,
         }}
       >
@@ -110,7 +112,7 @@ const UploadPage = ({ toast }) => {
               flex: i < steps.length - 1 ? 1 : "none",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div
                 style={{
                   width: 30,
@@ -126,7 +128,7 @@ const UploadPage = ({ toast }) => {
                         ? "var(--accent-gradient)"
                         : "var(--bg-card)",
                   border: `2px solid ${step >= i + 1 ? "var(--accent)" : "var(--border-light)"}`,
-                  fontSize: 12,
+                  fontSize: 9,
                   fontWeight: 700,
                   color: step >= i + 1 ? "#fff" : "var(--text-muted)",
                   transition: "var(--transition)",
@@ -136,7 +138,7 @@ const UploadPage = ({ toast }) => {
               </div>
               <span
                 style={{
-                  fontSize: 13,
+                  fontSize: 9.75,
                   fontWeight: 500,
                   color:
                     step === i + 1
@@ -156,7 +158,7 @@ const UploadPage = ({ toast }) => {
                   height: 2,
                   background:
                     step > i + 1 ? "var(--accent)" : "var(--border-color)",
-                  margin: "0 12px",
+                  margin: "0 9px",
                   transition: "background 0.3s",
                 }}
               />
@@ -171,8 +173,8 @@ const UploadPage = ({ toast }) => {
           background: "var(--bg-card)",
           border: "1px solid var(--border-color)",
           borderRadius: 24,
-          padding: 28,
-          marginBottom: 20,
+          padding: 21,
+          marginBottom: 15,
         }}
       >
         <div
@@ -191,7 +193,7 @@ const UploadPage = ({ toast }) => {
           style={{
             border: `2px dashed ${drag ? "var(--accent)" : file ? "var(--success)" : "var(--border-light)"}`,
             borderRadius: 16,
-            padding: "48px 24px",
+            padding: "36px 18px",
             textAlign: "center",
             cursor: "pointer",
             background: drag
@@ -209,23 +211,23 @@ const UploadPage = ({ toast }) => {
             style={{ display: "none" }}
             onChange={(e) => e.target.files[0] && drop(e.target.files[0])}
           />
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+          <div style={{ fontSize: 30, marginBottom: 9 }}>📊</div>
           <p
             style={{
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: 600,
               color: file ? "var(--success)" : "var(--text-primary)",
-              marginBottom: 4,
+              marginBottom: 3,
             }}
           >
             {file ? `✓ ${file.name}` : "Drop file here or click to browse"}
           </p>
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
+          <p style={{ fontSize: 9.75, color: "var(--text-muted)" }}>
             Supports .xlsx, .xls, .csv
           </p>
         </div>
         {file && (
-          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+          <div style={{ display: "flex", gap: 9, marginTop: 15 }}>
             <button
               onClick={doPreview}
               disabled={loading}

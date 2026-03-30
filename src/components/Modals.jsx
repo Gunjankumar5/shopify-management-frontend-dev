@@ -22,7 +22,7 @@ export const PriceModal = ({ count, onApply, onClose }) => {
       onClose={onClose}
       maxWidth={500}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
         <div>
           <p
             style={{
@@ -96,9 +96,9 @@ export const PriceModal = ({ count, onApply, onClose }) => {
             style={{
               background: "rgba(99,102,241,0.08)",
               border: "1px solid rgba(99,102,241,0.2)",
-              borderRadius: 12,
-              padding: "14px 16px",
-              fontSize: 14,
+              borderRadius: 9,
+              padding: "10.5px 12px",
+              fontSize: 10.5,
               color: "var(--accent)",
             }}
           >
@@ -112,7 +112,7 @@ export const PriceModal = ({ count, onApply, onClose }) => {
             </strong>
           </div>
         )}
-        <div style={{ display: "flex", gap: 12, paddingTop: 8 }}>
+        <div style={{ display: "flex", gap: 9, paddingTop: 6 }}>
           <button
             onClick={() =>
               val && onApply({ mode, value: parseFloat(val), dir })
@@ -180,7 +180,7 @@ export const EditModal = ({ product, onSave, onClose }) => {
       onClose={onClose}
       maxWidth={740}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div style={{ gridColumn: "1/-1" }}>
           <Field label="Title *" value={f.title} onChange={update("title")} />
         </div>

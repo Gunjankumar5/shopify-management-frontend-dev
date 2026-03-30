@@ -181,32 +181,32 @@ const GlobalStyles = () => (
       --login-left-success: rgba(16,185,129,0.06);
 
       /* Spacing - fluid scale (base 4px) */
-      --space-1: clamp(2px, 0.25vw, 4px);
-      --space-2: clamp(4px, 0.5vw, 8px);
-      --space-3: clamp(8px, 1vw, 12px);
-      --space-4: clamp(12px, 1.5vw, 16px);
-      --space-5: clamp(16px, 2vw, 20px);
-      --space-6: clamp(20px, 2.5vw, 24px);
-      --space-8: clamp(28px, 3.5vw, 32px);
-      --space-10: clamp(36px, 4.5vw, 40px);
+      --space-1: clamp(1.5px, 0.1875vw, 3px);
+      --space-2: clamp(3px, 0.375vw, 6px);
+      --space-3: clamp(6px, 0.75vw, 9px);
+      --space-4: clamp(9px, 1.125vw, 12px);
+      --space-5: clamp(12px, 1.5vw, 15px);
+      --space-6: clamp(15px, 1.875vw, 18px);
+      --space-8: clamp(21px, 2.625vw, 24px);
+      --space-10: clamp(27px, 3.375vw, 30px);
 
       /* Typography - fluid scale */
       --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       --font-display: 'Syne', var(--font-sans);
-      --text-xs: clamp(0.7rem, 1vw, 0.75rem);
-      --text-sm: clamp(0.8rem, 1.2vw, 0.875rem);
-      --text-base: clamp(0.9rem, 1.5vw, 1rem);
-      --text-lg: clamp(1rem, 2vw, 1.125rem);
-      --text-xl: clamp(1.125rem, 2.5vw, 1.25rem);
-      --text-2xl: clamp(1.3rem, 3vw, 1.5rem);
-      --text-3xl: clamp(1.6rem, 4vw, 2rem);
+      --text-xs: clamp(0.525rem, 0.75vw, 0.5625rem);
+      --text-sm: clamp(0.6rem, 0.9vw, 0.65625rem);
+      --text-base: clamp(0.675rem, 1.125vw, 0.75rem);
+      --text-lg: clamp(0.75rem, 1.5vw, 0.84375rem);
+      --text-xl: clamp(0.84375rem, 1.875vw, 0.9375rem);
+      --text-2xl: clamp(0.975rem, 2.25vw, 1.125rem);
+      --text-3xl: clamp(1.2rem, 3vw, 1.5rem);
 
       /* Borders */
-      --radius-sm: 4px;
-      --radius-md: 6px;
-      --radius-lg: 8px;
-      --radius-xl: 12px;
-      --radius-2xl: 16px;
+      --radius-sm: 3px;
+      --radius-md: 4.5px;
+      --radius-lg: 6px;
+      --radius-xl: 9px;
+      --radius-2xl: 12px;
       --radius-full: 9999px;
 
       /* Shadows */
@@ -572,8 +572,8 @@ const GlobalStyles = () => (
     }
     .app-main {
       flex: 1;
-      margin-left: 260px;
-      width: calc(100vw - 260px);
+      margin-left: 195px;
+      width: calc(100vw - 195px);
       min-height: 100vh;
     }
     .app-sidebar-backdrop {
@@ -590,9 +590,9 @@ const GlobalStyles = () => (
       z-index: var(--z-sticky);
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      margin-bottom: 10px;
+      gap: 7.5px;
+      padding: 7.5px 10.5px;
+      margin-bottom: 7.5px;
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border-subtle);
       backdrop-filter: blur(8px);
@@ -604,8 +604,8 @@ const GlobalStyles = () => (
       margin: 0;
     }
     .app-mobile-menu-btn {
-      width: 34px;
-      height: 34px;
+      width: 25.5px;
+      height: 25.5px;
       border-radius: var(--radius-md);
       border: 1px solid var(--border-strong);
       background: var(--bg-card);

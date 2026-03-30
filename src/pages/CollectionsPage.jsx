@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Ico, Spin } from "../components/Icons";
 import AddCollectionPage from "./AddcollectionPage";
@@ -11,6 +11,64 @@ export default function CollectionsPage({ toast }) {
 
   // null = list, true = new, object = edit context
   const [formMode, setFormMode] = useState(null);
+
+  // Helper to save formMode to localStorage (store only ID or "new")
+  const saveFormMode = useCallback((mode) => {
+    try {
+      if (mode === null) {
+        localStorage.removeItem("collectionFormMode");
+      } else if (mode === true) {
+        localStorage.setItem("collectionFormMode", JSON.stringify("new"));
+      } else if (mode?.id) {
+        localStorage.setItem("collectionFormMode", JSON.stringify(mode.id));
+      }
+    } catch {
+      // Silently fail if localStorage is unavailable
+    }
+  }, []);
+
+  // Restore formMode from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("collectionFormMode");
+      if (!saved) return;
+
+      const parsed = JSON.parse(saved);
+      if (parsed === "new") {
+        setFormMode(true);
+      } else if (typeof parsed === "string" && collections.length > 0) {
+        // It's a collection ID - only restore if we have collections loaded
+        const collection = collections.find((c) => c.id === parsed);
+        if (collection) {
+          setFormMode(collection);
+        } else if (!loading) {
+          // Collections loaded but this ID not found - clear it
+          localStorage.removeItem("collectionFormMode");
+        }
+      }
+    } catch {
+      // Silently fail if there's an error
+    }
+  }, [collections, loading]);
+
+  // Save formMode whenever it changes
+  useEffect(() => {
+    saveFormMode(formMode);
+  }, [formMode, saveFormMode]);
+
+  // On first mount, try to restore form mode immediately (for "new" forms)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("collectionFormMode");
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (parsed === "new") {
+        setFormMode(true);
+      }
+    } catch {
+      // Silently fail
+    }
+  }, []);
 
   useEffect(() => {
     fetchCollections();
@@ -49,6 +107,7 @@ export default function CollectionsPage({ toast }) {
         editCollection={formMode === true ? null : formMode}
         onBack={() => {
           setFormMode(null);
+          localStorage.removeItem("collectionFormMode");
           fetchCollections();
         }}
       />
@@ -73,8 +132,8 @@ export default function CollectionsPage({ toast }) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          marginBottom: 24,
-          gap: 12,
+          marginBottom: 18,
+          gap: 9,
           flexWrap: "wrap",
         }}
       >
@@ -86,7 +145,7 @@ export default function CollectionsPage({ toast }) {
             Organize products into custom collections
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 6 }}>
           <button
             onClick={handleSync}
             disabled={loading || refreshing}
@@ -114,8 +173,8 @@ export default function CollectionsPage({ toast }) {
         <div
           style={{
             display: "flex",
-            gap: 8,
-            marginBottom: 20,
+            gap: 6,
+            marginBottom: 15,
             flexWrap: "wrap",
           }}
         >
@@ -155,7 +214,7 @@ export default function CollectionsPage({ toast }) {
 
       {/* Loading skeleton */}
       {loading && (
-        <div style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "grid", gap: 9 }}>
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
@@ -185,7 +244,7 @@ export default function CollectionsPage({ toast }) {
 
       {/* Collections list */}
       {!loading && collections.length > 0 && (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 7.5 }}>
           {collections.map((col) => {
             const imgSrc = getImageSrc(col);
             const type = col.collection_type || "custom";
@@ -251,12 +310,12 @@ export default function CollectionsPage({ toast }) {
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
-                      marginBottom: 3,
+                      marginBottom: 2.25,
                     }}
                   >
                     <span
                       className="font-display font-bold text-primary"
-                      style={{ fontSize: 14 }}
+                      style={{ fontSize: 10.5 }}
                     >
                       {col.title}
                     </span>
@@ -290,7 +349,7 @@ export default function CollectionsPage({ toast }) {
                   )}
                   <div
                     className="text-muted"
-                    style={{ fontSize: 11, marginTop: 3 }}
+                    style={{ fontSize: 8.25, marginTop: 2.25 }}
                   >
                     ID:{" "}
                     <code

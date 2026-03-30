@@ -26,6 +26,64 @@ const ProductsPage = ({ toast, activeStore }) => {
   // null = list view, true = new product form, object = edit product form
   const [formMode, setFormMode] = useState(null);
 
+  // Helper to save formMode to localStorage (store only ID or "new")
+  const saveFormMode = useCallback((mode) => {
+    try {
+      if (mode === null) {
+        localStorage.removeItem("productFormMode");
+      } else if (mode === true) {
+        localStorage.setItem("productFormMode", JSON.stringify("new"));
+      } else if (mode?.id) {
+        localStorage.setItem("productFormMode", JSON.stringify(mode.id));
+      }
+    } catch {
+      // Silently fail if localStorage is unavailable
+    }
+  }, []);
+
+  // Restore formMode from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("productFormMode");
+      if (!saved) return;
+
+      const parsed = JSON.parse(saved);
+      if (parsed === "new") {
+        setFormMode(true);
+      } else if (typeof parsed === "string" && products.length > 0) {
+        // It's a product ID - only restore if we have products loaded
+        const product = products.find((p) => p.id === parsed);
+        if (product) {
+          setFormMode(product);
+        } else if (!loading) {
+          // Products loaded but this ID not found - clear it
+          localStorage.removeItem("productFormMode");
+        }
+      }
+    } catch {
+      // Silently fail if there's an error
+    }
+  }, [products, loading]);
+
+  // Save formMode whenever it changes
+  useEffect(() => {
+    saveFormMode(formMode);
+  }, [formMode, saveFormMode]);
+
+  // On first mount, try to restore form mode immediately
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("productFormMode");
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (parsed === "new") {
+        setFormMode(true);
+      }
+    } catch {
+      // Silently fail
+    }
+  }, []);
+
   const loadInitialProducts = useCallback(
     async ({ force = false } = {}) => {
       if (!activeStore?.shop_key) {
@@ -333,6 +391,7 @@ const ProductsPage = ({ toast, activeStore }) => {
         editProduct={formMode === true ? null : formMode}
         onBack={() => {
           setFormMode(null);
+          localStorage.removeItem("productFormMode");
           loadInitialProducts({ force: true });
         }}
       />
@@ -353,11 +412,11 @@ const ProductsPage = ({ toast, activeStore }) => {
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 21 }}>
         <h1
           className="font-display text-3xl font-bold flex items-center gap-3"
           style={{
-            paddingTop: "16px",
+            paddingTop: "12px",
             color: "var(--text-primary)",
           }}
         >
@@ -366,8 +425,8 @@ const ProductsPage = ({ toast, activeStore }) => {
         <p
           style={{
             color: "var(--text-muted)",
-            fontSize: "13px",
-            marginTop: "8px",
+            fontSize: "9.75px",
+            marginTop: "6px",
           }}
         >
           Manage your Shopify product catalog
@@ -417,7 +476,7 @@ const ProductsPage = ({ toast, activeStore }) => {
               <div
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "20px",
+                  fontSize: "15px",
                   fontWeight: "bold",
                   color: `var(--${s.color})`,
                   lineHeight: "1.2",
@@ -428,8 +487,8 @@ const ProductsPage = ({ toast, activeStore }) => {
               <div
                 style={{
                   color: "var(--text-muted)",
-                  fontSize: "12px",
-                  marginTop: "2px",
+                  fontSize: "9px",
+                  marginTop: "1.5px",
                 }}
               >
                 {s.label}
@@ -837,8 +896,8 @@ const ProductsPage = ({ toast, activeStore }) => {
             width: "100%",
             display: "grid",
             gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
-            gap: `${gridGap}px`,
-            padding: "12px",
+            gap: `${gridGap * 0.75}px`,
+            padding: "9px",
           }}
         >
           {pagedProducts.length > 0 ? (
@@ -877,8 +936,8 @@ const ProductsPage = ({ toast, activeStore }) => {
                       gridTemplateColumns:
                         "34px minmax(220px,1.6fr) minmax(120px,1fr) 90px 70px 90px 92px",
                       alignItems: "center",
-                      gap: 8,
-                      padding: "8px 12px",
+                      gap: 6,
+                      padding: "6px 9px",
                       borderBottom: "1px solid var(--border-strong)",
                     }}
                   >
