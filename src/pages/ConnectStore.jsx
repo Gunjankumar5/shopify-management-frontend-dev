@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { authFetch } from "../lib/authFetch";
+import { api } from "../api/api";
 
 const rawApiOrigin = (import.meta.env.VITE_API_ORIGIN || "")
   .trim()
@@ -184,28 +185,7 @@ export default function ConnectStore({ onConnected }) {
         api_key: form.api_key.trim(),
         api_secret: form.api_secret.trim(),
       };
-      const res = await authFetch(`${API}/auth/connect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await res.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.error("Invalid JSON response:", text);
-        throw new Error(
-          `Server error: ${res.status} - ${text.substring(0, 100)}`,
-        );
-      }
-
-      if (!res.ok) {
-        const errorMsg = data.detail || data.message || `HTTP ${res.status}`;
-        throw new Error(errorMsg);
-      }
-
+      const data = await api.post(`/auth/connect`, payload);
       setSuccess(data);
       if (onConnected) onConnected(data);
     } catch (e) {

@@ -29,10 +29,34 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
   const [user, setUser] = useState(null);
+  // Dev override: allow bypassing auth when visiting with ?dev_auth=1 on localhost
+  // Only enabled when VITE_ALLOW_DEV_SHORTCUTS is set to '1' or 'true' in the dev env.
+  const allowDevShortcuts =
+    String(import.meta.env.VITE_ALLOW_DEV_SHORTCUTS || "").toLowerCase() ===
+      "1" || String(import.meta.env.VITE_ALLOW_DEV_SHORTCUTS || "").toLowerCase() === "true";
+
+  useEffect(() => {
+    if (!allowDevShortcuts) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (
+        (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
+        (params.get("dev_auth") === "1" || params.get("dev_auth") === "true")
+      ) {
+        setUser({ email: "dev@local" });
+        setAuthLoading(false);
+      }
+    } catch (e) {}
+  }, [allowDevShortcuts]);
   const { toasts, add, remove } = useToast();
 
   useEffect(() => {
-    if (!hasSupabaseConfig || !supabase) {
+    if (allowDevShortcuts) {
+      // allowDevShortcuts: skip real supabase initialization when dev override is active
+      return;
+    }
+
+    if ((!hasSupabaseConfig || !supabase) && !allowDevShortcuts) {
       setAuthError(
         "Missing Supabase env config. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
       );

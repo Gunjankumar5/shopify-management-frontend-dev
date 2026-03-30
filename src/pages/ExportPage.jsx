@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Ico, Spin } from "../components/Icons"; // adjust path if needed
-import { authFetch } from "../lib/authFetch";
+import { api } from "../api/api";
 
 // ─── CDN libs ─────────────────────────────────────────────────────────────────
 const HOT_CSS =
@@ -101,6 +101,8 @@ function collectGridKeys(rows) {
   ALWAYS_VISIBLE_COLUMNS.forEach((k) => keySet.add(k));
   return Array.from(keySet);
 }
+
+
 
 // ─── Loading overlay (redesigned with global tokens) ─────────────────────────
 function LoadingOverlay({ step, elapsed, isMobile }) {
@@ -310,7 +312,31 @@ const ExportPage = ({ toast, activeStore }) => {
   const importedRows = useRef(new Set());
   const gridCols = useRef([]);
   const syncResults = useRef({}); // { row_index: status, error_msg }
+  const choiceMapRef = useRef({});
   const wsRef = useRef(null);
+
+  // Resolve a choices array for a given column header.
+  // Handles exact names, case-insensitive matches, and namespace-prefixed keys
+  // by comparing the last segment after separators like '.' or '/'.
+  function findChoicesForHeader(header) {
+    try {
+      const map = choiceMapRef.current || {};
+      if (!map || typeof map !== "object") return null;
+      if (map[header]) return map[header];
+      const lower = String(header || "").toLowerCase();
+      for (const k of Object.keys(map)) {
+        if (String(k).toLowerCase() === lower) return map[k];
+      }
+      for (const k of Object.keys(map)) {
+        const parts = String(k).split(/[\.\/:#\s|-]/).filter(Boolean);
+        const last = parts.length ? parts[parts.length - 1] : k;
+        if (String(last).toLowerCase() === lower) return map[k];
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }
 
   const [libsReady, setLibsReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -572,6 +598,75 @@ const ExportPage = ({ toast, activeStore }) => {
         };
       }
       const col = { data: key, readOnly: READONLY_COLS.has(key) };
+
+      // If this key has a choice map from the export JSON, use a strict dropdown.
+      try {
+        const choices = findChoicesForHeader(key);
+        if (
+          key !== "Status" &&
+          key !== "Delete" &&
+          Array.isArray(choices) &&
+          choices.length
+        ) {
+          col.type = "dropdown";
+          col.source = ["", ...choices];
+          col.strict = true;
+        }
+      } catch (e) {
+        // defensive: ignore malformed choice map
+      }
+
+      // Heuristic fallback (restricted): only enable auto-dropdowns for a
+      // small, curated set of columns and for metafield columns. The user
+      // requested removing this behavior from all other columns to avoid
+      // accidental dropdown coercion.
+      try {
+        const AUTO_WHITELIST = new Set([
+          "inventory tracked",
+          "requires shipping",
+          "required shipping",
+          "variant inventory policy",
+          "status",
+          "vendor",
+          "type",
+          "variant weight unit",
+          "variant weight unit",
+        ]);
+
+        function allowedForAutoDropdown(k) {
+          if (!k) return false;
+          const s = String(k).toLowerCase().trim();
+          if (AUTO_WHITELIST.has(s)) return true;
+          // Allow any column that clearly represents metafields
+          if (s.includes("metafield")) return true;
+          // Also allow exact matches for a couple of common variants
+          return AUTO_WHITELIST.has(s.replace(/\s+/g, " "));
+        }
+
+        if (!col.type && Array.isArray(preparedRows) && preparedRows.length && allowedForAutoDropdown(key)) {
+          const vals = preparedRows
+            .map((r) => r?.[key])
+            .filter((v) => v !== undefined && v !== null && String(v).trim() !== "")
+            .map((v) => String(v).trim());
+          const uniq = Array.from(new Set(vals));
+          if (uniq.length > 0 && uniq.length <= 20) {
+            const allBool = uniq.every((v) => /^(true|false|yes|no)$/i.test(v));
+            const allNumeric = uniq.every((v) => /^-?\d+(?:\.\d+)?$/.test(v));
+            if (allBool) {
+              col.type = "dropdown";
+              col.source = ["", "true", "false"];
+              col.strict = true;
+            } else if (!allNumeric) {
+              col.type = "dropdown";
+              col.source = ["", ...uniq];
+              col.strict = true;
+            }
+          }
+        }
+      } catch (e) {
+        // ignore any heuristic errors
+      }
+
       if (key === "Status") {
         col.type = "dropdown";
         col.source = ["ACTIVE", "DRAFT", "ARCHIVED"];
@@ -630,6 +725,50 @@ const ExportPage = ({ toast, activeStore }) => {
         }
         if (READONLY_COLS.has(key) || key === IMAGE_PREVIEW_COLUMN)
           return { className: "ro-cell" };
+        // Provide per-cell autocomplete/dropdown for metafield columns when
+        // the cell contains a namespace.key=value form or when a matching
+        // choice map exists for the metafield key.
+        if (key === "Product Metafields" || key === "Collection Metafields") {
+          try {
+            const hot = hotRef.current;
+            const raw = String(hot?.getDataAtCell(row, col) || "").trim();
+            // Attempt to extract a metafield key from the cell value. Examples:
+            //   "global.color=red"  => metafieldKey = "global.color"
+            //   "global.color: red" => metafieldKey = "global.color"
+            //   "color=red"         => metafieldKey = "color"
+            let metafieldKey = "";
+            if (raw) {
+              const first = raw.split(/[,;|]\s*/)[0];
+              const eq = first.indexOf("=");
+              const colon = first.indexOf(":");
+              if (eq >= 0) metafieldKey = first.slice(0, eq).trim();
+              else if (colon >= 0) metafieldKey = first.slice(0, colon).trim();
+              else metafieldKey = first.trim();
+            }
+            const choices = metafieldKey
+              ? findChoicesForHeader(metafieldKey) || findChoicesForHeader(metafieldKey.split(".").pop())
+              : null;
+            if (Array.isArray(choices) && choices.length) {
+              return {
+                className: importedRows.current.has(row) && gridChanges.current.has(row) ? "imported-cell" : undefined,
+                editor: "autocomplete",
+                type: "autocomplete",
+                source: function (query, process) {
+                  // Provide choices to Handsontable's autocomplete source callback
+                  try {
+                    const items = ["", ...choices];
+                    process(items);
+                  } catch (e) {
+                    process([""]);
+                  }
+                },
+                strict: true,
+              };
+            }
+          } catch (e) {
+            // ignore and fallthrough to default
+          }
+        }
         const hot = hotRef.current;
         if (hot) {
           const di = keys.indexOf("Delete");
@@ -688,9 +827,7 @@ const ExportPage = ({ toast, activeStore }) => {
       setTimeout(() => setLoadStep(i + 2), d),
     );
     try {
-      const res = await authFetch(`${API_BASE_URL}/export/json`);
-      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await api.get(`/export/json`);
       setLoadStep(5);
       const rows = (data.rows || []).map((r) => {
         const o = {};
@@ -700,6 +837,48 @@ const ExportPage = ({ toast, activeStore }) => {
         return o;
       });
       snapshotRef.current = data.snapshot || {};
+      choiceMapRef.current = data.choice_map || {};
+
+      // Merge metafield definitions choices from backend definitions endpoint
+      // to cover cases where choice lists are present in definitions but
+      // not included in the snapshot's choice_map (e.g. option-type metafields).
+      try {
+        const defsResp = await api.get(`/metafields/definitions/products`);
+        const defs = (defsResp && defsResp.definitions) || [];
+        // Build a mapping ns.key -> meta.choices
+        const defsMap = {};
+        defs.forEach((d) => {
+          try {
+            const ns = d.namespace || "";
+            const key = d.key || "";
+            if (!ns || !key) return;
+            const nsKey = `${ns}.${key}`;
+            const choices = (d.validations || []).find(v => v.name === 'choices');
+            let parsed = null;
+            if (choices && choices.value) {
+              try { parsed = JSON.parse(choices.value); } catch(e) { parsed = String(choices.value); }
+            }
+            defsMap[nsKey] = {
+              name: d.name || nsKey,
+              choices: Array.isArray(parsed) ? parsed.map(String) : (parsed ? [String(parsed)] : []),
+            };
+          } catch (e) {}
+        });
+
+        // Merge into choiceMapRef by display name and by last-segment name
+        Object.keys(defsMap).forEach((nsKey) => {
+          const meta = defsMap[nsKey];
+          if (!meta.choices || !meta.choices.length) return;
+          const display = meta.name || nsKey;
+          if (!choiceMapRef.current[display]) choiceMapRef.current[display] = meta.choices;
+          const last = nsKey.split('.').pop();
+          if (last && !choiceMapRef.current[last]) choiceMapRef.current[last] = meta.choices;
+        });
+      } catch (e) {
+        // ignore failures to fetch defs — best-effort
+      }
+
+      // Re-init grid so new choice_map is applied to columns
       setTimeout(() => initGrid(rows), 100);
       toast?.("Loaded " + rows.length + " rows", "success");
     } catch (err) {
@@ -860,17 +1039,12 @@ const ExportPage = ({ toast, activeStore }) => {
     setSyncState({ results: {} });
     syncResults.current = {};
     try {
-      const startRes = await authFetch(`${API_BASE_URL}/export/sync`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rows,
-          snapshot: snapshotRef.current,
-          shop_key: activeStore?.shop_key || null,
-        }),
+      const startData = await api.post(`/export/sync`, {
+        rows,
+        snapshot: snapshotRef.current,
+        shop_key: activeStore?.shop_key || null,
       });
-      if (!startRes.ok) throw new Error(await startRes.text());
-      const { session_id } = await startRes.json();
+      const { session_id } = startData;
 
       const isLocal =
         window.location.hostname === "localhost" ||

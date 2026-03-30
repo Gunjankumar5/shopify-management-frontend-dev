@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../api/config";
 import { Ico, Spin } from "../components/Icons";
 import AddCollectionPage from "./AddcollectionPage";
-import { authFetch } from "../lib/authFetch";
+import { api } from "../api/api";
 
 export default function CollectionsPage({ toast }) {
   const [collections, setCollections] = useState([]);
@@ -74,12 +74,10 @@ export default function CollectionsPage({ toast }) {
     fetchCollections();
   }, []);
 
-  async function fetchCollections() {
+  async function fetchCollections(force = false) {
     try {
       setLoading(true);
-      const res = await authFetch(`${API_BASE_URL}/collections/`);
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
+      const data = await api.get(`/collections/`, { ttlMs: 300000, force });
       setCollections(data.custom_collections || []);
     } catch (e) {
       toast?.(e.message, "error");
@@ -90,7 +88,7 @@ export default function CollectionsPage({ toast }) {
 
   async function handleSync() {
     setRefreshing(true);
-    await fetchCollections();
+    await fetchCollections(true);
     setRefreshing(false);
   }
 

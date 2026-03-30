@@ -61,9 +61,8 @@ export default function MetafieldsPage({ toast, activeStore }) {
     setSearch("");
     try {
       if (tab === "products" || tab === "variants") {
-        const r = await authFetch(`${API_BASE_URL}/products/all`);
-        // Note: /products/all streams NDJSON, so we need to read text and parse
-        const text = await r.text();
+        const res = await authFetch(`${API_BASE_URL}/products/all`);
+        const text = await res.text();
         const lines = text.trim().split("\n");
         const products = [];
         for (const line of lines) {
@@ -78,8 +77,8 @@ export default function MetafieldsPage({ toast, activeStore }) {
         }
         setResources(products);
       } else {
-        const r = await authFetch(`${API_BASE_URL}/collections/`);
-        const data = await r.json();
+        const res = await authFetch(`${API_BASE_URL}/collections/`);
+        const data = await res.json();
         setResources(data.custom_collections || []);
       }
     } catch (err) {

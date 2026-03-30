@@ -8,6 +8,13 @@ const inflightGets = new Map();
 function clearGetCache() {
   getCache.clear();
   inflightGets.clear();
+  try {
+    // remove persistent entries too
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("api_cache:")) localStorage.removeItem(key);
+    }
+  } catch {}
 }
 
 function clearProductCache() {
@@ -115,7 +122,21 @@ export const api = {
     const url = `${API_BASE_URL}${p}`;
     const ttlMs = options.ttlMs ?? GET_CACHE_TTL_MS;
     const force = Boolean(options.force);
+    const persist = Boolean(options.persist);
     console.log(`GET ${url}`);
+
+    // Check persistent localStorage first (if requested)
+    const storageKey = `api_cache:${url}`;
+    if (!force && persist) {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Date.now() - parsed.ts < ttlMs) return parsed.data;
+          localStorage.removeItem(storageKey);
+        }
+      } catch {}
+    }
 
     if (!force) {
       const cached = getCachedValue(url, ttlMs);
@@ -138,6 +159,11 @@ export const api = {
         throw error;
       }
       storeCachedValue(url, data);
+      if (persist) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify({ data, ts: Date.now() }));
+        } catch {}
+      }
       return data;
     })();
 

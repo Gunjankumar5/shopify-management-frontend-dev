@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../api/config";
-import { authFetch } from "../lib/authFetch";
+import { api } from "../api/api";
 import { Spin } from "./Icons";
 
 const C = {
@@ -550,21 +550,12 @@ function DefinitionRow({
     // Immediate mode: save directly
     setSaving(true);
     try {
-      const r = await authFetch(
-        `${API_BASE_URL}/metafields/${resource}/${resourceId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            namespace: def.namespace,
-            key: def.key,
-            type,
-            value: formattedValue,
-          }),
-        },
-      );
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || "Failed to save metafield");
+      const data = await api.post(`/metafields/${resource}/${resourceId}`, {
+        namespace: def.namespace,
+        key: def.key,
+        type,
+        value: formatForSave(value, type),
+      });
       toast?.("Saved!", "success");
       setEditing(false);
       setValue("");
@@ -711,18 +702,9 @@ function MetafieldRow({
     // Immediate mode only
     setSaving(true);
     try {
-      const formattedValue = formatForSave(editVal, mf.type);
-      const r = await authFetch(`${API_BASE_URL}/metafields/${mf.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ value: formattedValue }),
+      await api.put(`/metafields/${mf.id}`, {
+        value: formatForSave(editVal, mf.type),
       });
-      const data = await r.json();
-      if (!r.ok) {
-        const errorMsg =
-          data.detail || `Error updating metafield (HTTP ${r.status})`;
-        throw new Error(errorMsg);
-      }
       toast?.("Updated!", "success");
       setEditing(false);
       onSaved();
@@ -737,13 +719,7 @@ function MetafieldRow({
     if (!window.confirm("Delete this metafield?")) return;
     setDeleting(true);
     try {
-      const r = await authFetch(`${API_BASE_URL}/metafields/${mf.id}`, {
-        method: "DELETE",
-      });
-      if (!r.ok) {
-        const d = await r.json();
-        throw new Error(d.detail || "Failed");
-      }
+      await api.delete(`/metafields/${mf.id}`);
       toast?.("Deleted", "success");
       onDeleted(mf.id);
     } catch (e) {
@@ -890,21 +866,12 @@ function AddCustomForm({ resource, resourceId, toast, onSaved, onClose }) {
     }
     setSaving(true);
     try {
-      const r = await authFetch(
-        `${API_BASE_URL}/metafields/${resource}/${resourceId}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            namespace: form.namespace || "custom",
-            key: form.key,
-            type: form.type,
-            value: formatForSave(form.value, form.type),
-          }),
-        },
-      );
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.detail || "Failed");
+      await api.post(`/metafields/${resource}/${resourceId}`, {
+        namespace: form.namespace || "custom",
+        key: form.key,
+        type: form.type,
+        value: formatForSave(form.value, form.type),
+      });
       toast?.("Metafield created!", "success");
       onSaved();
       onClose();
@@ -1083,29 +1050,10 @@ export default function MetafieldsPanel({
     if (!resourceId) return;
     setLoading(true);
     try {
-      const [mfRes, defRes] = await Promise.all([
-        authFetch(`${API_BASE_URL}/metafields/${resource}/${resourceId}`),
-        authFetch(`${API_BASE_URL}/metafields/definitions/${resource}`),
+      const [mfData, defData] = await Promise.all([
+        api.get(`/metafields/${resource}/${resourceId}`),
+        api.get(`/metafields/definitions/${resource}`),
       ]);
-      const mfData = await mfRes.json();
-      let defData = { definitions: [] };
-
-      if (!defRes.ok) {
-        const errorData = await defRes.json();
-        console.error(
-          `Failed to load definitions (${defRes.status}):`,
-          errorData,
-        );
-        toast?.(
-          `Error loading metafield definitions: ${errorData.detail || defRes.statusText}`,
-          "error",
-        );
-      } else {
-        defData = await defRes.json();
-      }
-
-      console.log(`Metafields for ${resource}/${resourceId}:`, mfData);
-      console.log(`Definitions for ${resource}:`, defData);
       setMetafields(mfData.metafields || []);
       setDefinitions(defData.definitions || []);
     } catch (e) {
@@ -1152,36 +1100,19 @@ export default function MetafieldsPanel({
     try {
       // Save new metafields
       for (const mf of pendingChanges.new) {
-        const r = await authFetch(
-          `${API_BASE_URL}/metafields/${resource}/${resourceId}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              namespace: mf.namespace,
-              key: mf.key,
-              type: mf.type,
-              value: mf.value,
-            }),
-          },
-        );
-        if (!r.ok) {
-          const data = await r.json();
-          throw new Error(data.detail || "Failed to save metafield");
-        }
+        await api.post(`/metafields/${resource}/${resourceId}`, {
+          namespace: mf.namespace,
+          key: mf.key,
+          type: mf.type,
+          value: mf.value,
+        });
       }
 
       // Update existing metafields
       for (const update of pendingChanges.updates) {
-        const r = await authFetch(`${API_BASE_URL}/metafields/${update.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ value: update.value }),
+        await api.put(`/metafields/${update.id}`, {
+          value: update.value,
         });
-        if (!r.ok) {
-          const data = await r.json();
-          throw new Error(data.detail || "Failed to update metafield");
-        }
       }
 
       toast?.("All changes saved!", "success");

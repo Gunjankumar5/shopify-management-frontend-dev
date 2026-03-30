@@ -1,8 +1,8 @@
-﻿import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
 import { PageLoadingOverlay } from "../components/UI";
-import MetafieldsPanel from "../components/MetafieldsPanel";
+const MetafieldsPanel = lazy(() => import("../components/MetafieldsPanel"));
 
 function useViewportWidth() {
   const [width, setWidth] = useState(() => window.innerWidth);
@@ -1034,12 +1034,20 @@ function VariantMetafieldsPicker({ productVariants, toast }) {
         ))}
       </div>
       {selectedVariant && (
-        <MetafieldsPanel
-          resource="variants"
-          resourceId={selectedVariant.id}
-          resourceName={selectedVariant.title}
-          toast={toast}
-        />
+        <Suspense
+          fallback={
+            <div style={{ padding: 12, color: "var(--text-muted)" }}>
+              Loading metafields…
+            </div>
+          }
+        >
+          <MetafieldsPanel
+            resource="variants"
+            resourceId={selectedVariant.id}
+            resourceName={selectedVariant.title}
+            toast={toast}
+          />
+        </Suspense>
       )}
     </div>
   );
@@ -1850,21 +1858,29 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
             </CardBody>
           </Card>
           {/* Metafields (product) */}
-          {isEdit && editProduct?.id && (
+          {isEdit && currentProduct?.id && (
             <Card>
               <CardTitle>Metafields</CardTitle>
               <CardBody>
-                <MetafieldsPanel
-                  resource="products"
-                  resourceId={editProduct.id}
-                  resourceName={title}
-                  toast={toast}
-                />
+                <Suspense
+                  fallback={
+                    <div style={{ padding: 12, color: "var(--text-muted)" }}>
+                      Loading metafields…
+                    </div>
+                  }
+                >
+                  <MetafieldsPanel
+                    resource="products"
+                    resourceId={currentProduct.id}
+                    resourceName={title}
+                    toast={toast}
+                  />
+                </Suspense>
               </CardBody>
             </Card>
           )}
           {/* Variant metafields */}
-          {isEdit && variants.length > 0 && editProduct?.variants && (
+          {isEdit && variants.length > 0 && currentProduct?.variants && (
             <Card>
               <CardTitle>
                 Variant Metafields
@@ -1881,7 +1897,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
               </CardTitle>
               <CardBody>
                 <VariantMetafieldsPicker
-                  productVariants={editProduct.variants}
+                  productVariants={currentProduct.variants}
                   toast={toast}
                 />
               </CardBody>

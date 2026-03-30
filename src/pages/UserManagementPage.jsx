@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Ico, Spin } from "../components/Icons";
-import { authFetch } from "../lib/authFetch";
+import { api } from "../api/api";
 import { API_BASE_URL } from "../api/config";
 import { useTheme } from "../context/ThemeContext";
 
@@ -69,13 +69,7 @@ export default function UserManagementPage({ activeStore, userEmail }) {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await authFetch(`${API_BASE_URL}/api/users/`);
-      if (!res.ok) {
-        setError("Failed to load users");
-        setUsers([]);
-        return;
-      }
-      const data = await res.json();
+      const data = await api.get(`/api/users/`);
       setUsers(data.users || []);
       setError("");
     } catch (err) {
@@ -88,11 +82,8 @@ export default function UserManagementPage({ activeStore, userEmail }) {
 
   const fetchCurrentUserPermissions = async () => {
     try {
-      const res = await authFetch(`${API_BASE_URL}/api/users/me/permissions`);
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentUserPerms(data);
-      }
+      const data = await api.get(`/api/users/me/permissions`);
+      setCurrentUserPerms(data);
     } catch {}
   };
 
@@ -106,22 +97,12 @@ export default function UserManagementPage({ activeStore, userEmail }) {
     try {
       const permissions =
         formData.role === "junior" ? formData.permissions : {};
-      const res = await authFetch(`${API_BASE_URL}/api/users/create-junior`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          full_name: formData.full_name,
-          role: formData.role,
-          permissions,
-        }),
+      await api.post(`/api/users/create-junior`, {
+        email: formData.email,
+        full_name: formData.full_name,
+        role: formData.role,
+        permissions,
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.detail || "Failed to create user");
-        return;
-      }
 
       setError("");
       setShowCreateModal(false);
@@ -142,14 +123,7 @@ export default function UserManagementPage({ activeStore, userEmail }) {
       return;
 
     try {
-      const res = await authFetch(`${API_BASE_URL}/api/users/${userId}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        setError("Failed to delete user");
-        return;
-      }
+      await api.delete(`/api/users/${userId}`);
 
       await fetchUsers();
     } catch (err) {
