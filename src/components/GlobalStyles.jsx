@@ -1,3 +1,5 @@
+import React from 'react';
+
 const GlobalStyles = () => (
   <style>{`
     /* ----- Modern CSS Reset (based on modern-normalize) ----- */
@@ -9,11 +11,13 @@ const GlobalStyles = () => (
       padding: 0;
     }
     html {
+      height: 100%;
       -moz-text-size-adjust: none;
       -webkit-text-size-adjust: none;
       text-size-adjust: none;
     }
     body {
+      height: 100%;
       min-height: 100vh;
       line-height: 1.5;
       -webkit-font-smoothing: antialiased;

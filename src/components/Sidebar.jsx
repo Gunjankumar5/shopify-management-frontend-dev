@@ -4,6 +4,7 @@ import { useTheme } from "../context/ThemeContext";
 import { API_BASE_URL } from "../api/config";
 import { authFetch } from "../lib/authFetch";
 import { api } from "../api/api";
+import { useAuth } from "../hooks/useAuth";
 
 // Use CSS variables for theme-aware colors
 const getColors = () => ({
@@ -27,11 +28,15 @@ const Sidebar = ({
   setActiveStore,
   userEmail,
   onSignOut,
+  user,
+  can: providedCan,
 }) => {
   const [stores, setStores] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { theme, toggleTheme } = useTheme();
+  const { can: authCan, loading } = useAuth();
+  const can = providedCan || authCan; // Use provided can function or fall back to useAuth
   const colors = getColors();
 
   const fetchStores = async () => {
@@ -108,15 +113,38 @@ const Sidebar = ({
   };
 
   const navItems = [
-    { id: "products", label: "Products", icon: "products" },
-    { id: "metafields", label: "Metafields", icon: "tag" },
-    { id: "upload", label: "Upload", icon: "upload" },
-    { id: "collections", label: "Collections", icon: "collections" },
-    { id: "inventory", label: "Inventory", icon: "inventory" },
-    { id: "export", label: "Export", icon: "download" },
-    { id: "users", label: "User Management", icon: "users" },
-    { id: "activity-logs", label: "Activity Logs", icon: "history" },
-    { id: "connect", label: "Connect Store", icon: "tag" },
+    ...(loading || can("manage_products") 
+      ? [{ id: "products", label: "Products", icon: "products" }]
+      : []
+    ),
+    ...(loading || can("manage_metafields") 
+      ? [{ id: "metafields", label: "Metafields", icon: "tag" }]
+      : []
+    ),
+    ...(loading || can("manage_upload") 
+      ? [{ id: "upload", label: "Upload", icon: "upload" }]
+      : []
+    ),
+    ...(loading || can("manage_collections") 
+      ? [{ id: "collections", label: "Collections", icon: "collections" }]
+      : []
+    ),
+    ...(loading || can("manage_inventory") 
+      ? [{ id: "inventory", label: "Inventory", icon: "inventory" }]
+      : []
+    ),
+    ...(loading || can("manage_export") 
+      ? [{ id: "export", label: "Export", icon: "download" }]
+      : []
+    ),
+    ...(loading || can("manage_users") 
+      ? [{ id: "users", label: "User Management", icon: "users" }]
+      : []
+    ),
+    ...(loading || can("manage_stores") 
+      ? [{ id: "connect", label: "Connect Store", icon: "tag" }]
+      : []
+    ),
   ];
 
   return (

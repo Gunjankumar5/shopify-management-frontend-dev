@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { authFetch } from "../lib/authFetch";
 import { api } from "../api/api";
+import { useAuth } from "../hooks/useAuth";
+
+// Fix: Ensure proper component structure
 
 const rawApiOrigin = (import.meta.env.VITE_API_ORIGIN || "")
   .trim()
@@ -144,6 +147,7 @@ function Stat({ label, value }) {
 }
 
 export default function ConnectStore({ onConnected }) {
+  const { role, can } = useAuth();
   const [form, setForm] = useState({
     shop_name: "",
     api_key: "",
@@ -202,6 +206,118 @@ export default function ConnectStore({ onConnected }) {
     apiSecret: "api-secret",
     apiVersion: "api-version",
   };
+
+  // Check permissions
+  const hasAccess = can("manage_stores");
+  const hasRole = role !== null;
+
+  if (!hasRole) {
+    return (
+      <div
+        style={{
+          minHeight: "calc(100vh - 60px)",
+          display: "grid",
+          placeItems: "center",
+          padding: "18px",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 540,
+            width: "100%",
+            textAlign: "center",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: 12,
+            padding: "40px 20px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "48px",
+              marginBottom: "16px",
+            }}
+          >
+            🔒
+          </div>
+          <h2
+            style={{
+              fontSize: "24px",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              margin: "0 0 8px 0",
+            }}
+          >
+            Access Denied
+          </h2>
+          <p
+            style={{
+              color: "var(--text-secondary)",
+              fontSize: "14px",
+              margin: "8px 0 0 0",
+              lineHeight: "1.5",
+            }}
+          >
+            You must complete role-based login in the Team Management section to connect stores.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div
+        style={{
+          minHeight: "calc(100vh - 60px)",
+          display: "grid",
+          placeItems: "center",
+          padding: "18px",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 540,
+            width: "100%",
+            textAlign: "center",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: 12,
+            padding: "40px 20px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "48px",
+              marginBottom: "16px",
+            }}
+          >
+            ⛔
+          </div>
+          <h2
+            style={{
+              fontSize: "24px",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              margin: "0 0 8px 0",
+            }}
+          >
+            Permission Denied
+          </h2>
+          <p
+            style={{
+              color: "var(--text-secondary)",
+              fontSize: "14px",
+              margin: "8px 0 0 0",
+              lineHeight: "1.5",
+            }}
+          >
+            Your role does not have permission to manage stores. Contact your administrator for access.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -357,7 +473,7 @@ export default function ConnectStore({ onConnected }) {
               }}
               onMouseEnter={(e) => (e.currentTarget.style.opacity = 0.9)}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = 1)}
-              onFocusVisible={(e) =>
+              onFocus={(e) =>
                 (e.currentTarget.style.outline = "2px solid #fff")
               }
             >
@@ -387,7 +503,7 @@ export default function ConnectStore({ onConnected }) {
                 e.currentTarget.style.borderColor =
                   "var(--border-strong, #2a2a35)";
               }}
-              onFocusVisible={(e) =>
+              onFocus={(e) =>
                 (e.currentTarget.style.outline = "2px solid #fff")
               }
             >
@@ -817,7 +933,7 @@ export default function ConnectStore({ onConnected }) {
                     (e.currentTarget.style.backgroundColor =
                       "var(--panel-overlay-minimal)")
                   }
-                  onFocusVisible={(e) =>
+                  onFocus={(e) =>
                     (e.currentTarget.style.outline = "2px solid #fff")
                   }
                 >
@@ -904,7 +1020,7 @@ export default function ConnectStore({ onConnected }) {
               onMouseLeave={(e) => {
                 if (!loading) e.currentTarget.style.opacity = 1;
               }}
-              onFocusVisible={(e) =>
+              onFocus={(e) =>
                 (e.currentTarget.style.outline = "2px solid #fff")
               }
             >

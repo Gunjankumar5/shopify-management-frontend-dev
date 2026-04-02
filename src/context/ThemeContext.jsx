@@ -20,7 +20,7 @@ const getInitialTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(getInitialTheme);
+  const [theme, setTheme] = useState(getInitialTheme());
 
   // Apply theme to DOM and localStorage
   useEffect(() => {

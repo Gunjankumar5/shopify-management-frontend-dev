@@ -3,6 +3,8 @@ import { API_BASE_URL } from "../api/config";
 import { Ico, Spin } from "../components/Icons"; // adjust path if needed
 import { api } from "../api/api";
 
+// Fix: Ensure proper build cache refresh
+
 // ─── CDN libs ─────────────────────────────────────────────────────────────────
 const HOT_CSS =
   "https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css";
@@ -574,26 +576,53 @@ const ExportPage = ({ toast, activeStore }) => {
           readOnly: true,
           renderer: function (instance, td, row, col, prop, value) {
             td.innerHTML = "";
-            td.style.cssText = "padding:1.5px 3px;overflow:hidden;";
+            td.style.cssText = "padding:1.5px 3px;overflow:hidden;min-height:38px;";
             const sourceUrls = instance.getDataAtRowProp(row, IMAGE_URL_COLUMN);
             const urls = String(sourceUrls || "")
               .split(",")
               .map((u) => u.trim())
-              .filter(Boolean);
-            urls.slice(0, 3).forEach((url) => {
-              const img = document.createElement("img");
-              img.src = url;
-              img.style.cssText =
-                "height:38px;width:auto;max-width:44px;object-fit:cover;border-radius:var(--radius-sm);cursor:pointer;margin-right:2px;vertical-align:middle;";
-              img.onclick = (e) => {
-                e.stopPropagation();
-                window.open(url, "_blank");
-              };
-              img.onerror = () => {
-                img.style.display = "none";
-              };
-              td.appendChild(img);
+              .filter(Boolean)
+              .slice(0, 3);
+
+            // Lightweight placeholder to avoid layout thrash during scroll
+            urls.forEach(() => {
+              const ph = document.createElement("span");
+              ph.className = "inline-block";
+              ph.style.cssText = "height:38px;width:44px;display:inline-block;margin-right:2px;vertical-align:middle;background:rgba(0,0,0,0.03);border-radius:4px;";
+              td.appendChild(ph);
             });
+
+            // Defer image creation to idle time to avoid blocking scrolling
+            const createImages = () => {
+              try {
+                // Clear placeholders
+                td.innerHTML = "";
+                urls.forEach((url) => {
+                  const img = document.createElement("img");
+                  img.src = url;
+                  img.loading = "lazy";
+                  img.decoding = "async";
+                  img.width = 44;
+                  img.height = 38;
+                  img.style.cssText =
+                    "height:38px;width:auto;max-width:44px;object-fit:cover;border-radius:var(--radius-sm);cursor:pointer;margin-right:2px;vertical-align:middle;";
+                  img.onclick = (e) => {
+                    e.stopPropagation();
+                    window.open(url, "_blank");
+                  };
+                  img.onerror = () => {
+                    img.style.display = "none";
+                  };
+                  td.appendChild(img);
+                });
+              } catch (e) {}
+            };
+
+            if (typeof requestIdleCallback === "function") {
+              requestIdleCallback(createImages, { timeout: 500 });
+            } else {
+              setTimeout(createImages, 50);
+            }
           },
         };
       }
@@ -698,6 +727,8 @@ const ExportPage = ({ toast, activeStore }) => {
       manualColumnResize: true,
       manualColumnMove: true,
       fixedColumnsStart: 0,
+      renderAllRows: false,
+      viewportRowRenderingOffset: 20,
       autoWrapRow: true,
       wordWrap: false,
       rowHeight: 44,
@@ -804,6 +835,13 @@ const ExportPage = ({ toast, activeStore }) => {
         if (coords.row >= 0) setSelectedRow(coords.row);
       },
     });
+
+    // Ensure grid is rendered to avoid visual jumping
+    setTimeout(() => {
+      try {
+        hotRef.current?.render();
+      } catch (e) {}
+    }, 50);
 
     rowsRef.current = preparedRows;
     setHasData(true);
@@ -1134,7 +1172,7 @@ const ExportPage = ({ toast, activeStore }) => {
         {!isMobile && <div className="w-px h-6 bg-strong" />}
 
         <button
-          onClick={loadFromShopify}
+          onClick={() => loadFromShopify(false)}
           disabled={loading || !libsReady}
           className={`btn btn-sm ${!hasData ? "btn-primary" : "btn-secondary"}`}
         >
@@ -1148,6 +1186,8 @@ const ExportPage = ({ toast, activeStore }) => {
             </>
           )}
         </button>
+
+        {hasData && null}
 
         <label
           className="btn btn-secondary btn-sm cursor-pointer"

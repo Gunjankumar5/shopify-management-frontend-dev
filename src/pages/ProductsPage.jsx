@@ -41,7 +41,7 @@ const ProductsPage = ({ toast, activeStore }) => {
     }
   }, []);
 
-  // Restore formMode from localStorage
+  // Initialize and restore formMode from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem("productFormMode");
@@ -51,12 +51,10 @@ const ProductsPage = ({ toast, activeStore }) => {
       if (parsed === "new") {
         setFormMode(true);
       } else if (typeof parsed === "string" && products.length > 0) {
-        // It's a product ID - only restore if we have products loaded
         const product = products.find((p) => p.id === parsed);
         if (product) {
           setFormMode(product);
         } else if (!loading) {
-          // Products loaded but this ID not found - clear it
           localStorage.removeItem("productFormMode");
         }
       }
@@ -69,20 +67,6 @@ const ProductsPage = ({ toast, activeStore }) => {
   useEffect(() => {
     saveFormMode(formMode);
   }, [formMode, saveFormMode]);
-
-  // On first mount, try to restore form mode immediately
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("productFormMode");
-      if (!saved) return;
-      const parsed = JSON.parse(saved);
-      if (parsed === "new") {
-        setFormMode(true);
-      }
-    } catch {
-      // Silently fail
-    }
-  }, []);
 
   const loadInitialProducts = useCallback(
     async ({ force = false } = {}) => {
@@ -201,7 +185,7 @@ const ProductsPage = ({ toast, activeStore }) => {
   // ── FIX: removed loadAllProducts from deps — it was causing infinite loop ───
   useEffect(() => {
     setSel(new Set());
-    loadInitialProducts({ force: true });
+    loadInitialProducts();
   }, [statusF, searchQuery, activeStore?.shop_key, loadInitialProducts]);
 
   const filtered = useMemo(() => {
@@ -659,7 +643,7 @@ const ProductsPage = ({ toast, activeStore }) => {
         {/* Actions */}
         <div className="flex items-center gap-2 ml-auto">
           <button
-            onClick={() => loadAllProducts({ force: true })}
+            onClick={() => loadInitialProducts({ force: true })}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all"
             style={{

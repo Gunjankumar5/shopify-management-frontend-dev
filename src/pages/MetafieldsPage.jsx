@@ -976,7 +976,6 @@ export default function MetafieldsPage({ toast, activeStore }) {
                     <div
                       style={{
                         fontSize: 9.75,
-                        color: C.text,
                         display: "inline-block",
                         background: C.accent,
                         color: "#fff",

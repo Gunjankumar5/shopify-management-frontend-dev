@@ -5,15 +5,35 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      // Auto-detect based on actual server port
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true
       }
     }
-  }
-  ,
+  },
+  // Polyfill process and global for browser environment
+  define: {
+    global: 'globalThis',
+    'process.env': '{}',
+    'process.env.NODE_ENV': JSON.stringify('development'),
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      '@supabase/supabase-js',
+    ],
+  },
   build: {
+    // Use esbuild minification (stable and performant)
+    minify: 'esbuild',
+    
     // Split dependencies into logical chunks to avoid very large single bundles
     rollupOptions: {
       output: {
@@ -28,7 +48,9 @@ export default defineConfig({
         }
       }
     },
-    // raise warning threshold so small warnings don't fail CI; real fix is manualChunks above
-    chunkSizeWarningLimit: 600
-  }
+    chunkSizeWarningLimit: 600,
+    sourcemap: false,
+    assetsInlineLimit: 4096,
+    reportCompressedSize: true,
+  },
 });

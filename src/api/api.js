@@ -5,6 +5,25 @@ const GET_CACHE_TTL_MS = 30000;
 const getCache = new Map();
 const inflightGets = new Map();
 
+// ── Cache statistics for monitoring ────────────────────────────────────────────
+const cacheStats = {
+  hits: 0,
+  misses: 0,
+  get hitRate() {
+    const total = this.hits + this.misses;
+    return total === 0 ? 0 : ((this.hits / total) * 100).toFixed(1);
+  },
+};
+
+// Log cache stats every minute (development only)
+if (import.meta.env.DEV) {
+  setInterval(() => {
+    if (localStorage.getItem('DEBUG_CACHE')) {
+      console.log(`[Cache Stats] Hits: ${cacheStats.hits}, Misses: ${cacheStats.misses}, Rate: ${cacheStats.hitRate}%`);
+    }
+  }, 60000);
+}
+
 function clearGetCache() {
   getCache.clear();
   inflightGets.clear();
@@ -38,11 +57,21 @@ function clearProductCache() {
 
 function getCachedValue(url, ttlMs) {
   const cached = getCache.get(url);
-  if (!cached) return null;
-  if (Date.now() - cached.ts > ttlMs) {
-    getCache.delete(url);
+  if (!cached) {
+    cacheStats.misses++;
     return null;
   }
+  // Sticky entries never expire until explicitly cleared
+  if (cached.sticky) {
+    cacheStats.hits++;
+    return cached.data;
+  }
+  if (ttlMs !== Infinity && Date.now() - cached.ts > ttlMs) {
+    getCache.delete(url);
+    cacheStats.misses++;
+    return null;
+  }
+  cacheStats.hits++;
   return cached.data;
 }
 
@@ -132,6 +161,8 @@ export const api = {
         const raw = localStorage.getItem(storageKey);
         if (raw) {
           const parsed = JSON.parse(raw);
+          // If entry was stored as sticky, return it regardless of ts
+          if (parsed.sticky || ttlMs === Infinity) return parsed.data;
           if (Date.now() - parsed.ts < ttlMs) return parsed.data;
           localStorage.removeItem(storageKey);
         }
@@ -151,17 +182,22 @@ export const api = {
     }
 
     const request = (async () => {
-      const r = await fetchWithTimeout(url, {}, 120000);
+      const r = await fetchWithTimeout(url, { headers: {} }, 120000);
       const data = await parseResponseBody(r);
       if (!r.ok) {
         const error = new Error(extractErrorMessage(data, r.status));
         error.status = r.status;
         throw error;
       }
-      storeCachedValue(url, data);
+      const sticky = Boolean(options.sticky);
+      // store in-memory
+      getCache.set(url, { data, ts: Date.now(), sticky });
       if (persist) {
         try {
-          localStorage.setItem(storageKey, JSON.stringify({ data, ts: Date.now() }));
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({ data, ts: Date.now(), sticky }),
+          );
         } catch {}
       }
       return data;
@@ -183,7 +219,7 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(b),
-    });
+    }, 120000);
     const data = await parseResponseBody(r);
     if (!r.ok) {
       const error = new Error(extractErrorMessage(data, r.status));
@@ -201,7 +237,7 @@ export const api = {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(b),
-    });
+    }, 120000);
     const data = await parseResponseBody(r);
     if (!r.ok) {
       const error = new Error(extractErrorMessage(data, r.status));
@@ -215,7 +251,7 @@ export const api = {
   delete: async (p) => {
     const url = `${API_BASE_URL}${p}`;
     console.log(`DELETE ${url}`);
-    const r = await fetchWithTimeout(url, { method: "DELETE" });
+    const r = await fetchWithTimeout(url, { method: "DELETE" }, 120000);
     const data = await parseResponseBody(r);
     if (!r.ok) {
       const error = new Error(extractErrorMessage(data, r.status));
@@ -229,7 +265,10 @@ export const api = {
   upload: async (p, fd) => {
     const url = `${API_BASE_URL}${p}`;
     console.log(`UPLOAD ${url}`);
-    const r = await fetchWithTimeout(url, { method: "POST", body: fd }, 300000);
+    const r = await fetchWithTimeout(url, { 
+      method: "POST", 
+      body: fd 
+    }, 300000);
     const data = await parseResponseBody(r);
     if (!r.ok) {
       const error = new Error(extractErrorMessage(data, r.status));

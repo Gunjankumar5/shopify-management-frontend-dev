@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
+import React, { useState, useRef, useEffect, lazy, Suspense, useCallback } from "react";
 import { api } from "../api/api";
 import { Spin } from "../components/Icons";
 import { PageLoadingOverlay } from "../components/UI";
@@ -1134,6 +1134,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
   const [saving, setSaving] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const descRef = useRef(null);
+  const mountedRef = useRef(true);
   const isBusy = saving || loadingDetails || collectionsLoading;
 
   const overlayState = saving
@@ -1164,20 +1165,26 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
   }, [editProduct?.id]);
 
   useEffect(() => {
-    if (!isEdit || !currentProduct?.id) {
-      if (descRef.current) descRef.current.innerHTML = "";
-      return;
-    }
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-    let mounted = true;
-    const loadFullProduct = async () => {
+  const fetchFullProduct = useCallback(
+    async (force = false) => {
+      if (!isEdit || !currentProduct?.id) {
+        if (descRef.current) descRef.current.innerHTML = "";
+        return;
+      }
+
       setLoadingDetails(true);
       try {
         const res = await api.get(`/products/${currentProduct.id}`, {
-          force: true,
+          force,
         });
         const p = res?.product || res;
-        if (!mounted || !p) return;
+        if (!mountedRef.current || !p) return;
 
         setCurrentProduct(p);
 
@@ -1232,11 +1239,7 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
         }
 
         setMediaFiles(
-          (p.images || []).map((img) => ({
-            file: null,
-            url: img.src,
-            existing: true,
-          })),
+          (p.images || []).map((img) => ({ file: null, url: img.src, existing: true })),
         );
 
         if (descRef.current) {
@@ -1245,16 +1248,16 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
       } catch {
         toast("Could not load full product details", "error");
       } finally {
-        if (mounted) setLoadingDetails(false);
+        if (mountedRef.current) setLoadingDetails(false);
       }
-    };
+    },
+    [isEdit, currentProduct?.id, toast],
+  );
 
-    loadFullProduct();
-
-    return () => {
-      mounted = false;
-    };
-  }, [isEdit, currentProduct?.id]);
+  useEffect(() => {
+    // Load when editing a product or when its id changes
+    if (isEdit && currentProduct?.id) fetchFullProduct();
+  }, [isEdit, currentProduct?.id, fetchFullProduct]);
 
   useEffect(() => {
     let mounted = true;
@@ -1473,6 +1476,15 @@ export default function AddProductPage({ toast, onBack, editProduct }) {
           <Btn onClick={onBack} variant="secondary">
             Discard
           </Btn>
+          {isEdit && (
+            <Btn
+              onClick={() => fetchFullProduct(true)}
+              variant="secondary"
+              disabled={loadingDetails}
+            >
+              {loadingDetails ? <Spin size={12} /> : "Refresh"}
+            </Btn>
+          )}
           {isEdit && <Btn variant="danger">🗑 Delete</Btn>}
           <Btn onClick={handleSave} disabled={isBusy} variant="primary">
             {saving ? (
