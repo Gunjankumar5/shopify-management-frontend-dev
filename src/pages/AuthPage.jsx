@@ -433,7 +433,12 @@ export default function AuthPage({ onAuth }) {
 
         {/* ── LOGIN ── */}
         {view === VIEW.LOGIN && (
-          <>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLogin();
+            }}
+          >
             <Header title="Welcome back" subtitle="Sign in to your ShopManager account" />
             {error   && <div style={S.error}>❌ {error}</div>}
             {success && <div style={S.success}>✅ {success}</div>}
@@ -463,8 +468,8 @@ export default function AuthPage({ onAuth }) {
               </button>
             </div>
 
-            <button style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
-              onClick={handleLogin} disabled={loading}>
+            <button type="submit" style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
+              disabled={loading}>
               {loading ? <Spin /> : "Sign in"}
             </button>
 
@@ -474,12 +479,17 @@ export default function AuthPage({ onAuth }) {
                 Sign up
               </button>
             </div>
-          </>
+          </form>
         )}
 
         {/* ── SIGNUP ── */}
         {view === VIEW.SIGNUP && (
-          <>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSignup();
+            }}
+          >
             <Header title="Create account" subtitle="Join ShopManager to manage your Shopify store" />
             {error && <div style={S.error}>❌ {error}</div>}
 
@@ -532,8 +542,8 @@ export default function AuthPage({ onAuth }) {
               />
             )}
 
-            <button style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
-              onClick={handleSignup} disabled={loading}>
+            <button type="submit" style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
+              disabled={loading}>
               {loading ? <Spin /> : "Create account"}
             </button>
 
@@ -543,12 +553,17 @@ export default function AuthPage({ onAuth }) {
                 Sign in
               </button>
             </div>
-          </>
+          </form>
         )}
 
         {/* ── FORGOT PASSWORD ── */}
         {view === VIEW.FORGOT && (
-          <>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleForgot();
+            }}
+          >
             <Header title="Reset password" subtitle="Enter your email and we'll send you a reset link" />
             {error   && <div style={S.error}>❌ {error}</div>}
             {success && <div style={S.success}>✅ {success}</div>}
@@ -557,8 +572,8 @@ export default function AuthPage({ onAuth }) {
               onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com" autoComplete="email" />
 
-            <button style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
-              onClick={handleForgot} disabled={loading}>
+            <button type="submit" style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
+              disabled={loading}>
               {loading ? <Spin /> : "Send reset link"}
             </button>
 
@@ -566,12 +581,17 @@ export default function AuthPage({ onAuth }) {
               onClick={() => { clear(); setView(VIEW.LOGIN); }}>
               ← Back to login
             </button>
-          </>
+          </form>
         )}
 
         {/* ── RESET PASSWORD (from email link) ── */}
         {view === VIEW.RESET && (
-          <>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleReset();
+            }}
+          >
             <Header title="Set new password" subtitle="Choose a strong password for your account" />
             {error   && <div style={S.error}>❌ {error}</div>}
             {success && <div style={S.success}>✅ {success}</div>}
@@ -583,11 +603,11 @@ export default function AuthPage({ onAuth }) {
               onChange={e => setNewConf(e.target.value)}
               placeholder="Repeat new password" autoComplete="new-password" />
 
-            <button style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
-              onClick={handleReset} disabled={loading}>
+            <button type="submit" style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
+              disabled={loading}>
               {loading ? <Spin /> : "Update password"}
             </button>
-          </>
+          </form>
         )}
 
         {/* ── EMAIL PENDING CONFIRMATION ── */}

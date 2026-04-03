@@ -5,6 +5,7 @@ import { API_BASE_URL } from "../api/config";
 import { authFetch } from "../lib/authFetch";
 import { api } from "../api/api";
 import { useAuth } from "../hooks/useAuth";
+import { supabase } from "../lib/supabaseClient";
 
 // Use CSS variables for theme-aware colors
 const getColors = () => ({
@@ -41,6 +42,13 @@ const Sidebar = ({
 
   const fetchStores = async () => {
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.access_token) {
+        setStores([]);
+        setActiveStore(null);
+        return;
+      }
+
       const data = await api.get(`/auth/stores`, {
         ttlMs: 300000,
         persist: true,
@@ -60,12 +68,18 @@ const Sidebar = ({
       if (!activeStore || activeStore.shop_key !== active.shop_key) {
         setActiveStore(active);
       }
-    } catch {}
+    } catch (err) {
+      if (String(err?.status || "").startsWith("401")) {
+        setStores([]);
+        setActiveStore(null);
+      }
+    }
   };
 
   useEffect(() => {
+    if (loading || !user) return;
     fetchStores();
-  }, []);
+  }, [loading, user]);
 
   useEffect(() => {
     const handler = (e) => {

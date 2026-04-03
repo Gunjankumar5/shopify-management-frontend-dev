@@ -897,6 +897,7 @@ export default function ConnectStore({ onConnected }) {
                   type={showSecret ? "text" : "password"}
                   placeholder="shpss_... or shpua_..."
                   value={form.api_secret}
+                  autoComplete="new-password"
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}

@@ -421,7 +421,13 @@ export default function UserManagementPage({ toast }) {
           <p style={{ margin: 0, color: c.muted, fontSize: 12, lineHeight: 1.5 }}>
             Create and manage only the users in your own admin team.
           </p>
-          <div style={{ display: "grid", gap: "10px", marginTop: 16 }}>
+          <form
+            style={{ display: "grid", gap: "10px", marginTop: 16 }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateUser();
+            }}
+          >
             <input
               value={createForm.full_name}
               onChange={(e) => setCreateForm((p) => ({ ...p, full_name: e.target.value }))}
@@ -472,6 +478,7 @@ export default function UserManagementPage({ toast }) {
               value={createForm.password}
               onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
               placeholder="Password (optional)"
+              autoComplete="new-password"
               style={{
                 padding: "11px 12px",
                 borderRadius: "12px",
@@ -483,7 +490,7 @@ export default function UserManagementPage({ toast }) {
               }}
             />
             <button
-              onClick={handleCreateUser}
+              type="submit"
               disabled={creating}
               style={{
                 padding: "11px 14px",
@@ -500,7 +507,7 @@ export default function UserManagementPage({ toast }) {
             >
               {creating ? "Creating..." : "Create Team User"}
             </button>
-          </div>
+          </form>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", padding: 10, gap: 10 }}>
