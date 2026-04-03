@@ -113,35 +113,35 @@ const Sidebar = ({
   };
 
   const navItems = [
-    ...(loading || can("manage_products") 
+    ...(!loading && can("manage_products") 
       ? [{ id: "products", label: "Products", icon: "products" }]
       : []
     ),
-    ...(loading || can("manage_metafields") 
+    ...(!loading && can("manage_metafields") 
       ? [{ id: "metafields", label: "Metafields", icon: "tag" }]
       : []
     ),
-    ...(loading || can("manage_upload") 
+    ...(!loading && can("manage_upload") 
       ? [{ id: "upload", label: "Upload", icon: "upload" }]
       : []
     ),
-    ...(loading || can("manage_collections") 
+    ...(!loading && can("manage_collections") 
       ? [{ id: "collections", label: "Collections", icon: "collections" }]
       : []
     ),
-    ...(loading || can("manage_inventory") 
+    ...(!loading && can("manage_inventory") 
       ? [{ id: "inventory", label: "Inventory", icon: "inventory" }]
       : []
     ),
-    ...(loading || can("manage_export") 
+    ...(!loading && can("manage_export") 
       ? [{ id: "export", label: "Export", icon: "download" }]
       : []
     ),
-    ...(loading || can("manage_users") 
+    ...(!loading && can("manage_users") 
       ? [{ id: "users", label: "User Management", icon: "users" }]
       : []
     ),
-    ...(loading || can("manage_stores") 
+    ...(!loading && can("manage_stores") 
       ? [{ id: "connect", label: "Connect Store", icon: "tag" }]
       : []
     ),

@@ -281,6 +281,7 @@ const ROLES = {
 
 function RoleSelector({ user }) {
   const [selectedRole, setSelectedRole] = useState(null);
+  const [adminEmail, setAdminEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { signOut } = useAuth();
@@ -298,16 +299,23 @@ function RoleSelector({ user }) {
         throw new Error("No auth token found");
       }
 
-      const API_BASE_URL = import.meta.env.VITE_API_ORIGIN || "http://127.0.0.1:8000/api";
+      if ((roleKey === "manager" || roleKey === "junior") && !adminEmail.trim()) {
+        throw new Error("Admin email is required for manager or junior role");
+      }
+
+      const apiOrigin = (import.meta.env.VITE_API_ORIGIN || "http://127.0.0.1:8000").replace(/\/$/, "");
 
       // Update user role on backend using the /me/role endpoint (allows users to set own role on first registration)
-      const res = await fetch(`${API_BASE_URL}/users/me/role`, {
+      const res = await fetch(`${apiOrigin}/api/users/me/role`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ role: roleKey }),
+        body: JSON.stringify({
+          role: roleKey,
+          admin_email: (roleKey === "manager" || roleKey === "junior") ? adminEmail.trim().toLowerCase() : null,
+        }),
       });
 
       if (!res.ok) {
@@ -443,6 +451,38 @@ function RoleSelector({ user }) {
             </button>
           ))}
         </div>
+
+        {(selectedRole === "manager" || selectedRole === "junior") && (
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "var(--text-muted)",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+              }}
+            >
+              Admin Email
+            </label>
+            <input
+              type="email"
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+              placeholder="admin@company.com"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--border-subtle)",
+                background: "var(--bg-primary)",
+                color: "var(--text-primary)",
+                fontSize: "14px",
+              }}
+            />
+          </div>
+        )}
 
         <button
           onClick={async () => {

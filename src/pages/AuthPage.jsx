@@ -14,86 +14,123 @@ const VIEW = {
 const S = {
   page: {
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #0A0A0A 0%, #1a1a2e 100%)",
+    background:
+      "radial-gradient(circle at top left, rgba(99,102,241,0.24), transparent 28%), radial-gradient(circle at bottom right, rgba(16,185,129,0.16), transparent 34%), linear-gradient(135deg, #08090f 0%, #111423 48%, #0d111c 100%)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "20px",
+    padding: "28px",
     fontFamily: "inherit",
+    position: "relative",
+    overflow: "hidden",
   },
   card: {
-    background: "rgba(17,17,30,0.8)",
-    backdropFilter: "blur(10px)",
-    border: "1px solid rgba(59,130,246,0.2)",
-    borderRadius: 24,
-    padding: "40px",
+    background: "linear-gradient(180deg, rgba(18,22,36,0.96), rgba(11,13,22,0.98))",
+    backdropFilter: "blur(18px)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 30,
+    padding: "34px",
     width: "100%",
-    maxWidth: 420,
-    boxShadow: "0 24px 80px rgba(0,0,0,0.8), 0 0 40px rgba(59,130,246,0.1)",
+    maxWidth: 520,
+    boxShadow: "0 28px 90px rgba(0,0,0,0.58), 0 0 0 1px rgba(255,255,255,0.03)",
   },
   logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    background: "linear-gradient(135deg,#3B82F6,#8B5CF6)",
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #22c55e 135%)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: 26,
-    margin: "0 auto 24px",
-    boxShadow: "0 8px 24px rgba(59,130,246,0.3)",
+    fontSize: 28,
+    margin: "0 auto 18px",
+    boxShadow: "0 18px 42px rgba(99,102,241,0.34)",
+    border: "1px solid rgba(255,255,255,0.12)",
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 800,
-    color: "#fff",
+    color: "var(--text-primary)",
     textAlign: "center",
     marginBottom: 8,
-    letterSpacing: "-0.5px",
+    letterSpacing: "-0.04em",
+    fontFamily: "var(--font-display)",
   },
   subtitle: {
-    fontSize: 13,
-    color: "#888",
+    fontSize: 14,
+    color: "var(--text-secondary)",
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: 22,
     lineHeight: 1.5,
+  },
+  eyebrow: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "6px 12px",
+    borderRadius: 999,
+    background: "rgba(99,102,241,0.12)",
+    border: "1px solid rgba(99,102,241,0.2)",
+    color: "#c7d2fe",
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    margin: "0 auto 14px",
+  },
+  metaRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 24,
+  },
+  metaPill: {
+    padding: "7px 10px",
+    borderRadius: 999,
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    color: "var(--text-secondary)",
+    fontSize: 11,
+    fontWeight: 600,
   },
   label: {
     display: "block",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
-    color: "#aaa",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
-    letterSpacing: "0.8px",
+    letterSpacing: "0.1em",
     marginBottom: 8,
   },
   input: {
     width: "100%",
     padding: "13px 16px",
-    background: "rgba(15,15,25,0.9)",
-    border: "1px solid #2a2a3d",
-    borderRadius: 12,
-    fontSize: 15,
-    color: "#e8e8f0",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.09)",
+    borderRadius: 16,
+    fontSize: 14,
+    color: "var(--text-primary)",
     outline: "none",
     fontFamily: "inherit",
     boxSizing: "border-box",
-    transition: "all 0.2s",
+    transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s, background 0.2s",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.02)",
   },
   btn: {
     width: "100%",
-    padding: "14px",
-    borderRadius: 12,
-    fontSize: 15,
+    padding: "14px 16px",
+    borderRadius: 16,
+    fontSize: 14,
     fontWeight: 700,
-    background: "linear-gradient(135deg,#3B82F6,#8B5CF6)",
+    background: "var(--accent-gradient)",
     border: "none",
-    color: "#fff",
+    color: "var(--text-on-accent)",
     cursor: "pointer",
     fontFamily: "inherit",
-    transition: "all 0.2s",
-    marginTop: 6,
-    boxShadow: "0 8px 20px rgba(59,130,246,0.3)",
+    transition: "transform 0.2s, box-shadow 0.2s, opacity 0.2s",
+    marginTop: 10,
+    boxShadow: "0 16px 32px rgba(99,102,241,0.28)",
   },
   btnDisabled: {
     opacity: 0.6,
@@ -101,63 +138,63 @@ const S = {
   },
   btnSecondary: {
     width: "100%",
-    padding: "13px",
-    borderRadius: 12,
+    padding: "13px 16px",
+    borderRadius: 16,
     fontSize: 14,
     fontWeight: 600,
-    background: "transparent",
-    border: "1.5px solid #3B82F6",
-    color: "#3B82F6",
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    color: "var(--text-primary)",
     cursor: "pointer",
     fontFamily: "inherit",
     transition: "all 0.2s",
-    marginTop: 8,
+    marginTop: 10,
   },
   btnText: {
     width: "100%",
     padding: "13px",
-    borderRadius: 12,
+    borderRadius: 14,
     fontSize: 14,
     fontWeight: 600,
     background: "transparent",
-    border: "1px solid #2a2a3d",
-    color: "#888",
+    border: "1px solid rgba(255,255,255,0.08)",
+    color: "var(--text-muted)",
     cursor: "pointer",
     fontFamily: "inherit",
-    marginTop: 8,
+    marginTop: 10,
     transition: "all 0.2s",
   },
   divider: {
     display: "flex",
     alignItems: "center",
     gap: 12,
-    margin: "20px 0",
-    color: "#444",
+    margin: "20px 0 18px",
+    color: "var(--text-muted)",
     fontSize: 12,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    background: "#2a2a3d",
+    background: "rgba(255,255,255,0.08)",
   },
   error: {
-    background: "rgba(239,68,68,0.1)",
-    border: "1px solid rgba(239,68,68,0.3)",
-    borderRadius: 12,
+    background: "rgba(239,68,68,0.11)",
+    border: "1px solid rgba(239,68,68,0.22)",
+    borderRadius: 16,
     padding: "12px 16px",
     fontSize: 13,
-    color: "#fca5a5",
+    color: "#fecaca",
     marginBottom: 18,
     fontWeight: 500,
     lineHeight: 1.5,
   },
   success: {
-    background: "rgba(16,185,129,0.1)",
-    border: "1px solid rgba(16,185,129,0.3)",
-    borderRadius: 12,
+    background: "rgba(16,185,129,0.11)",
+    border: "1px solid rgba(16,185,129,0.22)",
+    borderRadius: 16,
     padding: "12px 16px",
     fontSize: 13,
-    color: "#86efac",
+    color: "#bbf7d0",
     marginBottom: 18,
     fontWeight: 500,
     lineHeight: 1.5,
@@ -165,7 +202,7 @@ const S = {
   link: {
     background: "none",
     border: "none",
-    color: "#3B82F6",
+    color: "#93c5fd",
     cursor: "pointer",
     fontSize: 13,
     padding: 0,
@@ -174,11 +211,11 @@ const S = {
   },
   googleBtn: {
     width: "100%",
-    padding: "13px",
-    borderRadius: 12,
-    border: "1.5px solid rgba(232,232,240,0.15)",
-    background: "rgba(26,26,46,0.5)",
-    color: "#e8e8f0",
+    padding: "13px 16px",
+    borderRadius: 16,
+    border: "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.04)",
+    color: "var(--text-primary)",
     fontSize: 14,
     fontWeight: 600,
     cursor: "pointer",
@@ -277,6 +314,8 @@ export default function AuthPage({ onAuth }) {
   const [fullName, setFullName] = useState("");
   const [newPass,  setNewPass]  = useState("");
   const [newConf,  setNewConf]  = useState("");
+  const [signupRole, setSignupRole] = useState("admin");
+  const [adminEmail, setAdminEmail] = useState("");
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
   const [success,  setSuccess]  = useState("");
@@ -306,11 +345,23 @@ export default function AuthPage({ onAuth }) {
     if (!fullName || !email || !password) { setError("All fields are required"); return; }
     if (password !== confirm) { setError("Passwords do not match"); return; }
     if (password.length < 6)  { setError("Password must be at least 6 characters"); return; }
+    if ((signupRole === "manager" || signupRole === "junior") && !adminEmail.trim()) {
+      setError("Admin email is required for manager or junior signup");
+      return;
+    }
     setLoading(true); clear();
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: {
+          full_name: fullName,
+          desired_role: signupRole,
+          admin_email: (signupRole === "manager" || signupRole === "junior")
+            ? adminEmail.trim().toLowerCase()
+            : null,
+        },
+      },
     });
     if (error) setError(error.message);
     else {
@@ -363,9 +414,15 @@ export default function AuthPage({ onAuth }) {
   // ── Shared header ─────────────────────────────────────────────────────────
   const Header = ({ title, subtitle }) => (
     <>
+      <div style={S.eyebrow}>Secure multi-admin access</div>
       <div style={S.logo}>🛍️</div>
       <div style={S.title}>{title}</div>
       <div style={S.subtitle}>{subtitle}</div>
+      <div style={S.metaRow}>
+        <span style={S.metaPill}>Role-based onboarding</span>
+        <span style={S.metaPill}>Admin team isolation</span>
+        <span style={S.metaPill}>Store-level access control</span>
+      </div>
     </>
   );
 
@@ -450,6 +507,30 @@ export default function AuthPage({ onAuth }) {
             <Input label="Confirm Password" type="password" value={confirm}
               onChange={e => setConfirm(e.target.value)}
               placeholder="Repeat password" autoComplete="new-password" />
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={S.label}>Select Role</label>
+              <select
+                value={signupRole}
+                onChange={e => setSignupRole(e.target.value)}
+                style={{ ...S.input, cursor: "pointer" }}
+              >
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="junior">Junior</option>
+              </select>
+            </div>
+
+            {(signupRole === "manager" || signupRole === "junior") && (
+              <Input
+                label="Admin Email"
+                type="email"
+                value={adminEmail}
+                onChange={e => setAdminEmail(e.target.value)}
+                placeholder="admin@company.com"
+                autoComplete="email"
+              />
+            )}
 
             <button style={{ ...S.btn, ...(loading ? S.btnDisabled : {}) }}
               onClick={handleSignup} disabled={loading}>

@@ -25,6 +25,8 @@ const ROLES = {
   junior:  { label: "Junior",  color: "#6366f1", bg: "rgba(99,102,241,0.12)",  desc: "Only granted permissions" },
 };
 
+const MANAGEABLE_ROLES = ["manager", "junior"];
+
 // ── Auth helper ───────────────────────────────────────────────────────────────
 async function authHeaders() {
   if (!supabase) return {};
@@ -55,6 +57,13 @@ export default function UserManagementPage({ toast }) {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
+  const [createForm, setCreateForm] = useState({
+    full_name: "",
+    email: "",
+    role: "manager",
+    password: "",
+  });
+  const [creating, setCreating] = useState(false);
   const fetchedRef = useRef(false);
 
   const c = {
@@ -64,13 +73,17 @@ export default function UserManagementPage({ toast }) {
     text: "var(--text-primary)",
     muted: "var(--text-muted)",
     accent: "var(--accent)",
-    accentLight: "var(--accent-light)",
+    accentLight: "rgba(99,102,241,0.14)",
     danger: "var(--danger-text)",
     dangerBg: "var(--danger-light)",
     dangerBorder: "var(--danger-border)",
     success: "var(--success-text)",
     successBg: "var(--success-light)",
   };
+
+  const activeCount = users.filter((u) => u.is_active).length;
+  const managerCount = users.filter((u) => u.role === "manager").length;
+  const juniorCount = users.filter((u) => u.role === "junior").length;
 
   // Fetch users list
   useEffect(() => {
@@ -232,6 +245,50 @@ export default function UserManagementPage({ toast }) {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!createForm.full_name.trim() || !createForm.email.trim()) {
+      toast?.("Name and email are required", "error");
+      return;
+    }
+    if (!MANAGEABLE_ROLES.includes(createForm.role)) {
+      toast?.("Only manager or junior can be created", "error");
+      return;
+    }
+
+    try {
+      setCreating(true);
+      setError("");
+      await apiFetch("/users/create-junior", {
+        method: "POST",
+        body: JSON.stringify({
+          full_name: createForm.full_name.trim(),
+          email: createForm.email.trim().toLowerCase(),
+          role: createForm.role,
+          password: createForm.password.trim() || null,
+          permissions: {},
+        }),
+      });
+      setCreateForm({
+        full_name: "",
+        email: "",
+        role: "manager",
+        password: "",
+      });
+      const data = await apiFetch("/users/");
+      setUsers(data.users || []);
+      toast?.("Team member created successfully", "success");
+    } catch (err) {
+      setError(err.message || "Failed to create user");
+      toast?.(err.message || "Failed to create user", "error");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const selectedIsSelf = selectedUser?.id === user?.id;
+  const selectedIsAdmin = selectedUser?.role === "admin";
+  const disableAdminOps = updating || selectedIsSelf || selectedIsAdmin;
+
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: c.bg, display: "grid", placeItems: "center" }}>
@@ -261,37 +318,216 @@ export default function UserManagementPage({ toast }) {
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: c.bg }}>
-      {/* ── LEFT PANEL (User List) ── */}
-      <div style={{ width: "300px", borderRight: `1px solid ${c.border}`, overflow: "auto" }}>
-        <div style={{ padding: "20px", borderBottom: `1px solid ${c.border}` }}>
-          <h2 style={{ fontSize: "16px", fontWeight: 700, color: c.text, margin: "0 0 12px 0" }}>
-            Team Members ({users.length})
-          </h2>
+    <div
+      style={{
+        minHeight: "100vh",
+        padding: "24px",
+        background:
+          "radial-gradient(circle at top left, rgba(99,102,241,0.20), transparent 28%), radial-gradient(circle at bottom right, rgba(16,185,129,0.12), transparent 30%), var(--bg-primary)",
+      }}
+    >
+      <div style={{ maxWidth: "1600px", margin: "0 auto", display: "grid", gap: "20px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            gap: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 12px",
+                borderRadius: 999,
+                background: "rgba(99,102,241,0.12)",
+                border: "1px solid rgba(99,102,241,0.18)",
+                color: "#c7d2fe",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                marginBottom: 10,
+              }}
+            >
+              Team access management
+            </div>
+            <h1
+              style={{
+                fontSize: "clamp(24px, 3vw, 34px)",
+                fontWeight: 800,
+                color: c.text,
+                margin: 0,
+                letterSpacing: "-0.04em",
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              User Management
+            </h1>
+            <p style={{ marginTop: 8, color: c.muted, fontSize: 14, maxWidth: 760, lineHeight: 1.6 }}>
+              Create managers and juniors, adjust permissions, and keep every admin team isolated from the others.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {[
+              { label: "Visible", value: users.length },
+              { label: "Active", value: activeCount },
+              { label: "Managers", value: managerCount },
+              { label: "Juniors", value: juniorCount },
+            ].map((item) => (
+              <div
+                key={item.label}
+                style={{
+                  minWidth: 110,
+                  padding: "12px 14px",
+                  borderRadius: 18,
+                  background: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${c.border}`,
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+                }}
+              >
+                <div style={{ color: c.muted, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  {item.label}
+                </div>
+                <div style={{ color: c.text, fontSize: 20, fontWeight: 800, marginTop: 4, fontFamily: "var(--font-display)" }}>
+                  {item.value}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(320px, 360px) minmax(0, 1fr)", gap: 20, minHeight: "calc(100vh - 160px)" }}>
+      {/* ── LEFT PANEL (User List) ── */}
+      <div
+        style={{
+          width: "100%",
+          borderRight: `1px solid ${c.border}`,
+          overflow: "hidden",
+          borderRadius: 28,
+          background: "linear-gradient(180deg, rgba(23,26,38,0.96), rgba(14,16,24,0.98))",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.28)",
+          border: `1px solid ${c.border}`,
+        }}
+      >
+        <div style={{ padding: "20px", borderBottom: `1px solid ${c.border}`, background: "rgba(255,255,255,0.02)" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 800, color: c.text, margin: "0 0 8px 0", fontFamily: "var(--font-display)" }}>
+            Team Members ({users.length})
+          </h2>
+          <p style={{ margin: 0, color: c.muted, fontSize: 12, lineHeight: 1.5 }}>
+            Create and manage only the users in your own admin team.
+          </p>
+          <div style={{ display: "grid", gap: "10px", marginTop: 16 }}>
+            <input
+              value={createForm.full_name}
+              onChange={(e) => setCreateForm((p) => ({ ...p, full_name: e.target.value }))}
+              placeholder="Full name"
+              style={{
+                padding: "11px 12px",
+                borderRadius: "12px",
+                border: `1px solid ${c.border}`,
+                background: c.card,
+                color: c.text,
+                fontSize: "13px",
+                outline: "none",
+              }}
+            />
+            <input
+              value={createForm.email}
+              onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))}
+              placeholder="Email"
+              style={{
+                padding: "11px 12px",
+                borderRadius: "12px",
+                border: `1px solid ${c.border}`,
+                background: c.card,
+                color: c.text,
+                fontSize: "13px",
+                outline: "none",
+              }}
+            />
+            <select
+              value={createForm.role}
+              onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+              style={{
+                padding: "11px 12px",
+                borderRadius: "12px",
+                border: `1px solid ${c.border}`,
+                background: c.card,
+                color: c.text,
+                fontSize: "13px",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              <option value="manager">Manager</option>
+              <option value="junior">Junior</option>
+            </select>
+            <input
+              type="password"
+              value={createForm.password}
+              onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+              placeholder="Password (optional)"
+              style={{
+                padding: "11px 12px",
+                borderRadius: "12px",
+                border: `1px solid ${c.border}`,
+                background: c.card,
+                color: c.text,
+                fontSize: "13px",
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={handleCreateUser}
+              disabled={creating}
+              style={{
+                padding: "11px 14px",
+                borderRadius: "12px",
+                border: "none",
+                background: "var(--accent-gradient)",
+                color: "#fff",
+                fontWeight: 700,
+                fontSize: "13px",
+                cursor: creating ? "not-allowed" : "pointer",
+                opacity: creating ? 0.7 : 1,
+                boxShadow: "0 14px 28px rgba(99,102,241,0.24)",
+              }}
+            >
+              {creating ? "Creating..." : "Create Team User"}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", padding: 10, gap: 10 }}>
           {users.map((u) => (
             <button
               key={u.id}
               onClick={() => setSelectedUser(u)}
               style={{
-                padding: "12px 16px",
-                borderBottom: `1px solid ${c.border}`,
-                background: selectedUser?.id === u.id ? c.accentLight : "transparent",
-                border: "none",
+                padding: "14px 16px",
+                border: `1px solid ${selectedUser?.id === u.id ? "rgba(99,102,241,0.30)" : c.border}`,
+                background: selectedUser?.id === u.id ? "rgba(99,102,241,0.14)" : "rgba(255,255,255,0.02)",
+                borderRadius: 18,
                 cursor: "pointer",
                 textAlign: "left",
-                transition: "background 0.2s",
+                transition: "transform 0.2s, background 0.2s, border-color 0.2s",
+                boxShadow: selectedUser?.id === u.id ? "0 12px 30px rgba(99,102,241,0.12)" : "none",
               }}
               onMouseEnter={(e) => {
                 if (selectedUser?.id !== u.id) {
-                  e.currentTarget.style.background = `${c.accentLight}40`;
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (selectedUser?.id !== u.id) {
-                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                  e.currentTarget.style.transform = "translateY(0)";
                 }
               }}
             >
@@ -316,14 +552,14 @@ export default function UserManagementPage({ toast }) {
       </div>
 
       {/* ── RIGHT PANEL (User Details) ── */}
-      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", borderRadius: 28, background: "linear-gradient(180deg, rgba(23,26,38,0.76), rgba(13,15,22,0.94))", boxShadow: "0 24px 80px rgba(0,0,0,0.28)", border: `1px solid ${c.border}` }}>
         {selectedUser ? (
           <>
             {/* Header */}
-            <div style={{ padding: "20px", borderBottom: `1px solid ${c.border}`, background: c.card }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "16px" }}>
+            <div style={{ padding: "22px", borderBottom: `1px solid ${c.border}`, background: "rgba(255,255,255,0.02)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "16px", gap: 16, flexWrap: "wrap" }}>
                 <div>
-                  <h1 style={{ fontSize: "20px", fontWeight: 700, color: c.text, margin: 0, marginBottom: "4px" }}>
+                  <h1 style={{ fontSize: "22px", fontWeight: 800, color: c.text, margin: 0, marginBottom: "6px", fontFamily: "var(--font-display)" }}>
                     {selectedUser.full_name}
                   </h1>
                   <div style={{ fontSize: "13px", color: c.muted }}>
@@ -333,17 +569,17 @@ export default function UserManagementPage({ toast }) {
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     onClick={() => handleToggleActive(selectedUser.id, selectedUser.is_active)}
-                    disabled={updating}
+                    disabled={disableAdminOps}
                     style={{
                       padding: "8px 16px",
-                      borderRadius: "6px",
-                      background: selectedUser.is_active ? "transparent" : c.dangerBg,
+                      borderRadius: "999px",
+                      background: selectedUser.is_active ? "rgba(255,255,255,0.03)" : c.dangerBg,
                       border: `1px solid ${selectedUser.is_active ? c.border : c.dangerBorder}`,
                       color: selectedUser.is_active ? c.muted : c.danger,
-                      cursor: updating ? "not-allowed" : "pointer",
+                      cursor: disableAdminOps ? "not-allowed" : "pointer",
                       fontSize: "12px",
                       fontWeight: 600,
-                      opacity: updating ? 0.6 : 1,
+                      opacity: disableAdminOps ? 0.6 : 1,
                       transition: "all 0.2s",
                     }}
                   >
@@ -354,10 +590,10 @@ export default function UserManagementPage({ toast }) {
 
               {error && (
                 <div style={{
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   background: c.dangerBg,
                   border: `1px solid ${c.dangerBorder}`,
-                  borderRadius: "6px",
+                  borderRadius: "14px",
                   color: c.danger,
                   fontSize: "12px",
                 }}>
@@ -367,26 +603,28 @@ export default function UserManagementPage({ toast }) {
             </div>
 
             {/* Content */}
-            <div style={{ flex: 1, padding: "24px", overflow: "auto" }}>
+            <div style={{ flex: 1, padding: "24px", overflow: "auto", display: "grid", gap: 28 }}>
               {/* Role Section */}
-              <div style={{ marginBottom: "32px" }}>
-                <h2 style={{ fontSize: "14px", fontWeight: 700, color: c.text, margin: "0 0 16px 0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <div style={{ padding: 20, borderRadius: 24, border: `1px solid ${c.border}`, background: "rgba(255,255,255,0.03)" }}>
+                <h2 style={{ fontSize: "14px", fontWeight: 800, color: c.text, margin: "0 0 16px 0", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                   Role
                 </h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {Object.entries(ROLES).map(([roleKey, roleInfo]) => (
+                  {MANAGEABLE_ROLES.map((roleKey) => {
+                    const roleInfo = ROLES[roleKey];
+                    return (
                     <label
                       key={roleKey}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        padding: "12px",
+                        padding: "14px",
                         background: selectedUser.role === roleKey ? roleInfo.bg : c.card,
                         border: `1px solid ${c.border}`,
-                        borderRadius: "8px",
-                        cursor: updating ? "not-allowed" : "pointer",
+                        borderRadius: "16px",
+                        cursor: disableAdminOps ? "not-allowed" : "pointer",
                         transition: "all 0.2s",
-                        opacity: updating ? 0.6 : 1,
+                        opacity: disableAdminOps ? 0.6 : 1,
                       }}
                     >
                       <input
@@ -395,7 +633,7 @@ export default function UserManagementPage({ toast }) {
                         value={roleKey}
                         checked={selectedUser.role === roleKey}
                         onChange={() => handleRoleChange(selectedUser.id, roleKey)}
-                        disabled={updating}
+                        disabled={disableAdminOps}
                         style={{ marginRight: "12px", cursor: "pointer" }}
                       />
                       <div>
@@ -407,14 +645,15 @@ export default function UserManagementPage({ toast }) {
                         </div>
                       </div>
                     </label>
-                  ))}
+                  );
+                  })}
                 </div>
               </div>
 
               {/* Permissions Section */}
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                  <h2 style={{ fontSize: "14px", fontWeight: 700, color: c.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <div style={{ padding: 20, borderRadius: 24, border: `1px solid ${c.border}`, background: "rgba(255,255,255,0.03)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: 12, flexWrap: "wrap" }}>
+                  <h2 style={{ fontSize: "14px", fontWeight: 800, color: c.text, margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                     Permissions
                   </h2>
                   <div style={{ display: "flex", gap: "8px" }}>
@@ -423,10 +662,10 @@ export default function UserManagementPage({ toast }) {
                       disabled={updating}
                       style={{
                         padding: "6px 12px",
-                        background: "transparent",
+                        background: "rgba(255,255,255,0.03)",
                         border: `1px solid ${c.border}`,
                         color: c.text,
-                        borderRadius: "6px",
+                        borderRadius: "999px",
                         cursor: updating ? "not-allowed" : "pointer",
                         fontSize: "11px",
                         fontWeight: 600,
@@ -457,20 +696,21 @@ export default function UserManagementPage({ toast }) {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
                   {ALL_PERMISSIONS.map((perm) => (
                     <label
                       key={perm.key}
                       style={{
                         display: "flex",
                         alignItems: "flex-start",
-                        padding: "12px",
+                        padding: "14px",
                         background: c.card,
                         border: `1px solid ${c.border}`,
-                        borderRadius: "8px",
+                        borderRadius: "16px",
                         cursor: updating ? "not-allowed" : "pointer",
                         transition: "all 0.2s",
                         opacity: updating ? 0.6 : 1,
+                        minHeight: 92,
                       }}
                     >
                       <input
@@ -479,7 +719,7 @@ export default function UserManagementPage({ toast }) {
                         onChange={(e) =>
                           handlePermissionToggle(selectedUser.id, perm.key, e.target.checked)
                         }
-                        disabled={updating}
+                        disabled={disableAdminOps}
                         style={{ marginRight: "10px", marginTop: "2px", cursor: "pointer" }}
                       />
                       <div>
@@ -501,7 +741,9 @@ export default function UserManagementPage({ toast }) {
             Select a user to manage permissions
           </div>
         )}
+        </div>
       </div>
     </div>
+  </div>
   );
 }
